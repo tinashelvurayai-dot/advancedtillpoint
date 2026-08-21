@@ -377,7 +377,6 @@ function CashierScreen() {
 
   const checkout = useMutation<{ entry: TxLogEntry }, Error, void>({
     mutationFn: async () => {
-      console.log("DBG mutationFn start", cart.length);
       if (cart.length === 0) throw new Error("Cart is empty");
 
       const items = cart.map((l) => ({
@@ -419,11 +418,10 @@ function CashierScreen() {
       recordSaleDelta(entry.id, items);
       setQueuedCount(getQueue().length);
 
-      console.log("DBG mutationFn done", entry.id);
       return Promise.resolve({ entry: logEntry });
     },
-    onMutate: () => { console.log("DBG onMutate"); setCheckingOut(true); },
-    onSettled: (d, e) => { console.log("DBG onSettled", String(e)); setCheckingOut(false); },
+    onMutate: () => setCheckingOut(true),
+    onSettled: () => setCheckingOut(false),
     onSuccess: (res) => {
       const paid = Number(amountPaid);
       setReceipt({
