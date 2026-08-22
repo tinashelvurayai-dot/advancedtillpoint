@@ -16,18 +16,21 @@ export type Database = {
     Tables: {
       app_settings: {
         Row: {
+          auto_approve_refunds: boolean
           id: boolean
           show_cashier_manual: boolean
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          auto_approve_refunds?: boolean
           id?: boolean
           show_cashier_manual?: boolean
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          auto_approve_refunds?: boolean
           id?: boolean
           show_cashier_manual?: boolean
           updated_at?: string
