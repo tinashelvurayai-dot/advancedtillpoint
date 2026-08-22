@@ -68,6 +68,51 @@ function RefundsPage() {
     }),
   });
 
+  const settings = useQuery({
+    queryKey: ["app-settings", "auto-approve-refunds"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("app_settings")
+        .select("auto_approve_refunds")
+        .eq("id", true)
+        .maybeSingle();
+      return data ?? { auto_approve_refunds: false };
+    },
+  });
+  const autoApprove = settings.data?.auto_approve_refunds === true;
+
+  const toggleAuto = useMutation({
+    mutationFn: async (next: boolean) => {
+      const { data: existing } = await supabase
+        .from("app_settings")
+        .select("id")
+        .eq("id", true)
+        .maybeSingle();
+      if (!existing) {
+        const { error } = await supabase
+          .from("app_settings")
+          .insert({ id: true, auto_approve_refunds: next });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("app_settings")
+          .update({ auto_approve_refunds: next, updated_at: new Date().toISOString() })
+          .eq("id", true);
+        if (error) throw error;
+      }
+      return next;
+    },
+    onSuccess: (next) => {
+      toast.success(
+        next
+          ? "Auto-approve is on - cashiers can complete refunds themselves"
+          : "Auto-approve is off - only managers can reverse a sale",
+      );
+      qc.invalidateQueries({ queryKey: ["app-settings"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const apply = useMutation({
     mutationFn: async () => {
       if (!target) throw new Error("Choose a sale");

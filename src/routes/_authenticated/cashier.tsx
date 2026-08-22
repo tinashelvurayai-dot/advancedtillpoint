@@ -33,6 +33,7 @@ import {
   AlertTriangle,
   X,
   Lock as LockIcon,
+  Undo2,
 } from "lucide-react";
 import { enqueueSale, flushQueue, getQueue } from "@/lib/offline-queue";
 import {
@@ -523,6 +524,12 @@ function CashierScreen() {
             <Link to="/orders">
               <Button variant="outline" size="sm">
                 <ClipboardList className="mr-2 h-4 w-4" /> Orders
+              </Button>
+            </Link>
+
+            <Link to="/refunds">
+              <Button variant="outline" size="sm">
+                <Undo2 className="mr-2 h-4 w-4" /> Refunds
               </Button>
             </Link>
 
