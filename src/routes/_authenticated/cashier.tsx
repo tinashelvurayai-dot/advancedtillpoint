@@ -33,6 +33,7 @@ import {
   AlertTriangle,
   X,
   Lock as LockIcon,
+  Undo2,
 } from "lucide-react";
 import { enqueueSale, flushQueue, getQueue } from "@/lib/offline-queue";
 import {
