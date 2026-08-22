@@ -526,6 +526,12 @@ function CashierScreen() {
               </Button>
             </Link>
 
+            <Link to="/refunds">
+              <Button variant="outline" size="sm">
+                <Undo2 className="mr-2 h-4 w-4" /> Refunds
+              </Button>
+            </Link>
+
             {showManual && (
               <Button variant="outline" size="sm" onClick={() => setManualOpen(true)}>
                 <BookOpen className="mr-2 h-4 w-4" /> Manual
