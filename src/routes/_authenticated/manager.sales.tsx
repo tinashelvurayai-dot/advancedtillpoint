@@ -34,6 +34,7 @@ function toCsv(rows: any[]): string {
       s.cashier_name ?? "Cashier",
       s.items?.reduce((a: number, x: any) => a + x.quantity, 0) ?? 0,
       s.payment_type,
+      s.status ?? "completed",
       Number(s.total_amount).toFixed(2),
     ]
       .map(esc)
