@@ -78,10 +78,14 @@ function ManagerManualContent() {
         </p>
       </Section>
 
-      <Section title="6. Suppliers">
+      <Section title="6. Suppliers &amp; Purchase Orders">
         <p>
           Supplier contacts and purchase records. Suppliers chosen here appear in the Stock-In
-          Records supplier list and in supplier cost totals.
+          Records supplier list and in supplier cost totals. Use the pencil icon to edit a supplier
+          and the red <span className="font-medium">bin icon</span> to delete one you no longer use;
+          you are asked to confirm first. A supplier that is still attached to a purchase order or a
+          stock-in record cannot be deleted - cancel or reassign those first, so your buying history
+          is never lost.
         </p>
       </Section>
 
