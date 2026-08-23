@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_authenticated/manager/sales")({
 });
 
 function toCsv(rows: any[]): string {
-  const header = ["When", "Cashier", "Items", "Payment", "Total"];
+  const header = ["When", "Cashier", "Items", "Payment", "Status", "Total"];
   const esc = (v: any) => {
     const s = String(v ?? "");
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -34,6 +34,7 @@ function toCsv(rows: any[]): string {
       s.cashier_name ?? "Cashier",
       s.items?.reduce((a: number, x: any) => a + x.quantity, 0) ?? 0,
       s.payment_type,
+      s.status ?? "completed",
       Number(s.total_amount).toFixed(2),
     ]
       .map(esc)
@@ -80,7 +81,15 @@ function SalesPage() {
     });
   }, [sales.data, search, payment, range]);
 
-  const total = filteredSales.reduce((s, r) => s + Number(r.total_amount), 0);
+  // Refunded / voided sales are shown for the record but taken out of the
+  // money figures so sales and reversals always balance.
+  const isReversed = (s: any) => s.status === "refunded" || s.status === "voided";
+  const countedSales = filteredSales.filter((s: any) => !isReversed(s));
+  const gross = filteredSales.reduce((s, r) => s + Number(r.total_amount), 0);
+  const reversed = filteredSales
+    .filter(isReversed)
+    .reduce((s, r) => s + Number(r.total_amount), 0);
+  const total = gross - reversed;
 
   function exportCsv() {
     const rows = filteredSales;
@@ -147,19 +156,24 @@ function SalesPage() {
         </Button>
       </div>
 
-      <div className="mb-6 grid gap-4 md:grid-cols-3">
+      <div className="mb-6 grid gap-4 md:grid-cols-4">
         <Card className="p-5">
-          <div className="text-sm text-muted-foreground">Transactions</div>
-          <div className="mt-1 text-2xl font-bold">{filteredSales.length}</div>
+          <div className="text-sm text-muted-foreground">Transactions counted</div>
+          <div className="mt-1 text-2xl font-bold">{countedSales.length}</div>
         </Card>
         <Card className="p-5">
           <div className="text-sm text-muted-foreground">Gross revenue</div>
-          <div className="mt-1 text-2xl font-bold">{formatCurrency(total)}</div>
+          <div className="mt-1 text-2xl font-bold">{formatCurrency(gross)}</div>
         </Card>
         <Card className="p-5">
-          <div className="text-sm text-muted-foreground">Avg ticket</div>
-          <div className="mt-1 text-2xl font-bold">
-            {formatCurrency(filteredSales.length ? total / filteredSales.length : 0)}
+          <div className="text-sm text-muted-foreground">Refunded / voided</div>
+          <div className="mt-1 text-2xl font-bold">-{formatCurrency(reversed)}</div>
+        </Card>
+        <Card className="p-5">
+          <div className="text-sm text-muted-foreground">Net revenue</div>
+          <div className="mt-1 text-2xl font-bold">{formatCurrency(total)}</div>
+          <div className="text-xs text-muted-foreground">
+            Avg ticket {formatCurrency(countedSales.length ? total / countedSales.length : 0)}
           </div>
         </Card>
       </div>
@@ -200,8 +214,15 @@ function SalesPage() {
                     <Badge variant="secondary" className="capitalize">
                       {s.payment_type}
                     </Badge>
+                    {isReversed(s) && (
+                      <Badge variant="outline" className="ml-2 capitalize">
+                        {s.status}
+                      </Badge>
+                    )}
                   </TableCell>
-                  <TableCell className="text-right font-semibold">
+                  <TableCell
+                    className={`text-right font-semibold ${isReversed(s) ? "text-muted-foreground line-through" : ""}`}
+                  >
                     {formatCurrency(s.total_amount)}
                   </TableCell>
                 </TableRow>

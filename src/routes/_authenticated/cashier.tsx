@@ -940,6 +940,18 @@ export function CashierManualContent() {
         </p>
       </section>
       <section>
+        <h3 className="font-semibold text-base">6b. Refunds and voids</h3>
+        <p className="text-muted-foreground">
+          Tap Refunds in the top bar to open your refunds page. A refund gives money back to a
+          customer; a void cancels a sale entered by mistake. Both can return the items to stock and
+          both remove the sale from the day&apos;s takings, so sales and refunds always balance. You
+          can only complete one yourself when the manager has switched on{" "}
+          <span className="font-medium">auto-approve refunds</span> - otherwise the page tells you
+          to ask the manager. Refunds need a connection; if you are offline, wait until the device
+          is back online.
+        </p>
+      </section>
+      <section>
         <h3 className="font-semibold text-base">7. Stock warnings</h3>
         <p className="text-muted-foreground">
           Out means the item cannot be sold. Low means only a few units remain - let the manager

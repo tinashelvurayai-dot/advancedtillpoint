@@ -89,7 +89,7 @@ function CashierRefundsPage() {
       const { error } = await supabase.rpc("refund_sale", {
         p_sale_id: target.id,
         p_kind: kind,
-        p_reason: reason.trim() || null,
+        p_reason: reason.trim() || undefined,
         p_restock: restock,
       });
       if (error) throw error;

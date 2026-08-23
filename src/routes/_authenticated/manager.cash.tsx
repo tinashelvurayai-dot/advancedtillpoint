@@ -45,6 +45,8 @@ function DailyCashPage() {
       const { data, error } = await supabase
         .from("sales")
         .select("total_amount, created_at, payment_type")
+        // Reversed sales never counted as cash in the drawer.
+        .not("status", "in", "(refunded,voided)")
         .gte("created_at", since.toISOString());
       if (error) throw error;
       return data ?? [];

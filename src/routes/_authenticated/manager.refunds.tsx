@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { cachedQuery } from "@/lib/cached-query";
-import { Undo2, Ban, Search } from "lucide-react";
+import { Undo2, Ban, Search, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/manager/refunds")({
@@ -170,6 +170,29 @@ function RefundsPage() {
           <div className="mt-1 text-2xl font-bold">{sales.data?.length ?? 0}</div>
         </Card>
       </div>
+
+      <Card
+        className={`mt-6 flex flex-wrap items-center justify-between gap-4 p-5 ${autoApprove ? "border-emerald-200 bg-emerald-50" : ""}`}
+      >
+        <div className="max-w-2xl">
+          <div className="flex items-center gap-2 font-semibold">
+            <ShieldCheck className={`h-4 w-4 ${autoApprove ? "text-emerald-600" : "text-muted-foreground"}`} />
+            Auto-approve refunds
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Switch this on when you are away or in a meeting. Cashiers can then complete a refund or
+            void from their own Refunds page and it goes through immediately, with stock returned
+            and the sale removed from the day&apos;s takings. Switch it off and only you can reverse
+            a sale.
+          </p>
+        </div>
+        <Switch
+          checked={autoApprove}
+          disabled={toggleAuto.isPending}
+          onCheckedChange={(v) => toggleAuto.mutate(v)}
+          aria-label="Auto-approve refunds"
+        />
+      </Card>
 
       <Card className="mt-6 p-5">
         <div className="mb-4 flex items-center gap-2">

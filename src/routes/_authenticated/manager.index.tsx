@@ -148,8 +148,14 @@ function ManagerDashboard() {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const [salesToday, allSales, products, lowStock, recentSales] = await Promise.all([
-        supabase.from("sales").select("total_amount").gte("created_at", today.toISOString()),
-        supabase.from("sales").select("total_amount"),
+        // Refunded / voided sales are excluded so revenue always balances
+        // against the reversals recorded on the Refunds & Voids page.
+        supabase
+          .from("sales")
+          .select("total_amount")
+          .not("status", "in", "(refunded,voided)")
+          .gte("created_at", today.toISOString()),
+        supabase.from("sales").select("total_amount").not("status", "in", "(refunded,voided)"),
         supabase.from("products").select("id", { count: "exact", head: true }),
         supabase
           .from("stock")
