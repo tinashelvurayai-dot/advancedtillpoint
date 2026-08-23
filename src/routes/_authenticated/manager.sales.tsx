@@ -80,7 +80,15 @@ function SalesPage() {
     });
   }, [sales.data, search, payment, range]);
 
-  const total = filteredSales.reduce((s, r) => s + Number(r.total_amount), 0);
+  // Refunded / voided sales are shown for the record but taken out of the
+  // money figures so sales and reversals always balance.
+  const isReversed = (s: any) => s.status === "refunded" || s.status === "voided";
+  const countedSales = filteredSales.filter((s: any) => !isReversed(s));
+  const gross = filteredSales.reduce((s, r) => s + Number(r.total_amount), 0);
+  const reversed = filteredSales
+    .filter(isReversed)
+    .reduce((s, r) => s + Number(r.total_amount), 0);
+  const total = gross - reversed;
 
   function exportCsv() {
     const rows = filteredSales;
