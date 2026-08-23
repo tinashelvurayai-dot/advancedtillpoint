@@ -245,6 +245,23 @@ function SuppliersPage() {
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="text-destructive hover:text-destructive"
+                    disabled={deleteSupplier.isPending}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Delete supplier "${s.name}"? This cannot be undone. Past stock-in records stay in place.`,
+                        )
+                      )
+                        deleteSupplier.mutate(s);
+                    }}
+                    aria-label={`Delete ${s.name}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
                 <div className="text-xs text-muted-foreground">
                   {s.contact_name} {s.phone && `· ${s.phone}`}
