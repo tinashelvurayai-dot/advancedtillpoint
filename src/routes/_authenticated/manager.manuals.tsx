@@ -106,10 +106,33 @@ function ManagerManualContent() {
 
       <Section title="9. Sales">
         <p>
-          The full transaction ledger: date, cashier name, payment method, item count and total.
-          Search, filter by date and use <span className="font-medium">Export CSV</span> for
-          accounting or backup. This ledger feeds the Dashboard, Daily Cash expectation and Profit
-          figures.
+          The full transaction ledger: date, cashier name, payment method, item count, status and
+          total. Search, filter by date and use <span className="font-medium">Export CSV</span> for
+          accounting or backup. The cards at the top show{" "}
+          <span className="font-medium">gross revenue</span>, the value{" "}
+          <span className="font-medium">refunded or voided</span>, and{" "}
+          <span className="font-medium">net revenue</span> (gross minus reversals). Reversed sales
+          stay visible with a struck-through total but are excluded from every money figure, so the
+          ledger, the Dashboard, Daily Cash and Profit all agree.
+        </p>
+      </Section>
+
+      <Section title="9b. Refunds &amp; Voids">
+        <p>
+          Reverse a mistaken sale here. A <span className="font-medium">refund</span> returns money
+          to the customer; a <span className="font-medium">void</span> cancels a sale entered by
+          mistake. Leave <span className="font-medium">Return items to stock</span> on and the sold
+          quantities go straight back into Stock. Every reversal is written to the reversal history
+          with reason, amount and date, the sale is marked refunded or voided, and it drops out of
+          Today&apos;s sales, Sales net revenue, cash expected in the drawer and Profit - so refunds
+          and sales always balance.
+        </p>
+        <p>
+          <span className="font-medium">Auto-approve refunds</span>: switch this on when you are in
+          a meeting or away from the shop. Cashiers then use their own Refunds page on the till and
+          the reversal goes through immediately under their name. Switch it off and the till buttons
+          are disabled - only you can reverse a sale. The rule is enforced in the database, not just
+          on screen, so it cannot be bypassed.
         </p>
       </Section>
 
