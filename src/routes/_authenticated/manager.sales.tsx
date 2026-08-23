@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_authenticated/manager/sales")({
 });
 
 function toCsv(rows: any[]): string {
-  const header = ["When", "Cashier", "Items", "Payment", "Total"];
+  const header = ["When", "Cashier", "Items", "Payment", "Status", "Total"];
   const esc = (v: any) => {
     const s = String(v ?? "");
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
