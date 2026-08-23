@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { cachedQuery } from "@/lib/cached-query";
-import { Undo2, Ban, Search } from "lucide-react";
+import { Undo2, Ban, Search, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/manager/refunds")({
