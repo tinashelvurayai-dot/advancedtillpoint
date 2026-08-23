@@ -213,8 +213,15 @@ function SalesPage() {
                     <Badge variant="secondary" className="capitalize">
                       {s.payment_type}
                     </Badge>
+                    {isReversed(s) && (
+                      <Badge variant="outline" className="ml-2 capitalize">
+                        {s.status}
+                      </Badge>
+                    )}
                   </TableCell>
-                  <TableCell className="text-right font-semibold">
+                  <TableCell
+                    className={`text-right font-semibold ${isReversed(s) ? "text-muted-foreground line-through" : ""}`}
+                  >
                     {formatCurrency(s.total_amount)}
                   </TableCell>
                 </TableRow>
