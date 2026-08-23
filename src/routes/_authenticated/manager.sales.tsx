@@ -155,19 +155,24 @@ function SalesPage() {
         </Button>
       </div>
 
-      <div className="mb-6 grid gap-4 md:grid-cols-3">
+      <div className="mb-6 grid gap-4 md:grid-cols-4">
         <Card className="p-5">
-          <div className="text-sm text-muted-foreground">Transactions</div>
-          <div className="mt-1 text-2xl font-bold">{filteredSales.length}</div>
+          <div className="text-sm text-muted-foreground">Transactions counted</div>
+          <div className="mt-1 text-2xl font-bold">{countedSales.length}</div>
         </Card>
         <Card className="p-5">
           <div className="text-sm text-muted-foreground">Gross revenue</div>
-          <div className="mt-1 text-2xl font-bold">{formatCurrency(total)}</div>
+          <div className="mt-1 text-2xl font-bold">{formatCurrency(gross)}</div>
         </Card>
         <Card className="p-5">
-          <div className="text-sm text-muted-foreground">Avg ticket</div>
-          <div className="mt-1 text-2xl font-bold">
-            {formatCurrency(filteredSales.length ? total / filteredSales.length : 0)}
+          <div className="text-sm text-muted-foreground">Refunded / voided</div>
+          <div className="mt-1 text-2xl font-bold">-{formatCurrency(reversed)}</div>
+        </Card>
+        <Card className="p-5">
+          <div className="text-sm text-muted-foreground">Net revenue</div>
+          <div className="mt-1 text-2xl font-bold">{formatCurrency(total)}</div>
+          <div className="text-xs text-muted-foreground">
+            Avg ticket {formatCurrency(countedSales.length ? total / countedSales.length : 0)}
           </div>
         </Card>
       </div>
