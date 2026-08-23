@@ -136,6 +136,24 @@ function SuppliersPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const deleteSupplier = useMutation({
+    mutationFn: async (s: any) => {
+      const { error } = await supabase.from("suppliers").delete().eq("id", s.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Supplier deleted");
+      qc.invalidateQueries({ queryKey: ["suppliers"] });
+      qc.invalidateQueries({ queryKey: ["purchase-orders"] });
+    },
+    onError: (e: Error) =>
+      toast.error(
+        /foreign key|violates/i.test(e.message)
+          ? "This supplier is linked to purchase orders or stock-in records, so it cannot be deleted."
+          : e.message,
+      ),
+  });
+
   const poTotal = useMemo(
     () => poForm.items.reduce((s, i) => s + Number(i.quantity || 0) * Number(i.unit_cost || 0), 0),
     [poForm.items],
