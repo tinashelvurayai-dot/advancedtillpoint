@@ -73,7 +73,13 @@ self.addEventListener("activate", (event) => {
       const keys = await caches.keys();
       await Promise.allSettled(
         keys
-          .filter((key) => key.startsWith("tillpoint-") && key !== PRECACHE && key !== RUNTIME)
+          .filter(
+            (key) =>
+              key.startsWith("tillpoint-") &&
+              key !== PRECACHE &&
+              key !== RUNTIME &&
+              key !== PAGES,
+          )
           .map((key) => caches.delete(key)),
       );
       await self.clients.claim();
@@ -83,7 +89,11 @@ self.addEventListener("activate", (event) => {
 
 // The page decides when to swap versions so a cashier is never interrupted.
 self.addEventListener("message", (event) => {
-  if ((event.data as { type?: string } | undefined)?.type === "SKIP_WAITING") void self.skipWaiting();
+  const data = event.data as { type?: string } | undefined;
+  if (data?.type === "SKIP_WAITING") void self.skipWaiting();
+  // The app asks for a page refresh whenever it is online, so the offline
+  // copies of the HTML never go stale.
+  if (data?.type === "REFRESH_PAGES") event.waitUntil(cachePages());
 });
 
 async function cacheFirst(request: Request): Promise<Response> {
@@ -97,22 +107,36 @@ async function cacheFirst(request: Request): Promise<Response> {
   return response;
 }
 
+async function cachedPage(pathname: string): Promise<Response | undefined> {
+  const cache = await caches.open(PAGES);
+  return (
+    (await cache.match(pathname)) ??
+    (await cache.match(SHELL_URL)) ??
+    (await caches.match(SHELL_URL)) ??
+    undefined
+  );
+}
+
 async function navigationHandler(request: Request): Promise<Response> {
+  const pathname = new URL(request.url).pathname;
   try {
     const response = await fetch(request);
-    const copy = response.clone();
-    void caches.open(RUNTIME).then((cache) => cache.put("/", copy));
+    if (response.ok && !response.redirected) {
+      const copy = response.clone();
+      // Every visited page is stored under its OWN url so an offline launch
+      // renders that page, not whatever was opened last.
+      void caches.open(PAGES).then((cache) => cache.put(pathname, copy));
+    }
     return response;
   } catch {
-    // The SPA shell answers every in-app route while offline.
     return (
-      (await caches.match(request)) ??
-      (await caches.match("/")) ??
+      (await cachedPage(pathname)) ??
       (await caches.match(OFFLINE_URL)) ??
       new Response("Offline", { status: 503 })
     );
   }
 }
+
 
 self.addEventListener("fetch", (event) => {
   const request = event.request;
