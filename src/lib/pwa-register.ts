@@ -4,13 +4,12 @@
 function isPreviewOrDev(): boolean {
   if (typeof window === "undefined") return true;
   try {
+    // Dev builds and embedded previews never get a worker; anything else
+    // (published Lovable domain, custom domain, Vercel) must work offline.
     if (!import.meta.env.PROD) return true;
     if (window.self !== window.top) return true;
     const h = window.location.hostname;
     if (h.startsWith("id-preview--") || h.startsWith("preview--")) return true;
-    if (h === "lovableproject.com" || h.endsWith(".lovableproject.com")) return true;
-    if (h === "lovableproject-dev.com" || h.endsWith(".lovableproject-dev.com")) return true;
-    if (h === "beta.lovable.dev" || h.endsWith(".beta.lovable.dev")) return true;
     const params = new URLSearchParams(window.location.search);
     if (params.get("sw") === "off") return true;
   } catch {
@@ -18,6 +17,7 @@ function isPreviewOrDev(): boolean {
   }
   return false;
 }
+
 
 async function unregisterAppSW() {
   if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;
@@ -39,7 +39,8 @@ export function registerPWA(onUpdate?: (reload: () => void) => void) {
     return;
   }
   if (!("serviceWorker" in navigator)) return;
-  window.addEventListener("load", () => {
+
+  const start = () => {
     navigator.serviceWorker
       .register("/sw.js", { scope: "/" })
       .then(async (reg) => {
@@ -53,6 +54,17 @@ export function registerPWA(onUpdate?: (reload: () => void) => void) {
         } catch {
           // Storage and Background Sync are progressive enhancements.
         }
+
+        // Keep the offline copies of every till page fresh while online.
+        const refreshPages = () => {
+          if (navigator.onLine) reg.active?.postMessage({ type: "REFRESH_PAGES" });
+        };
+        refreshPages();
+        window.addEventListener("online", refreshPages);
+        void navigator.serviceWorker.ready.then((ready) => {
+          if (navigator.onLine) ready.active?.postMessage({ type: "REFRESH_PAGES" });
+        });
+
         function watch(worker: ServiceWorker | null) {
           if (!worker) return;
           worker.addEventListener("statechange", () => {
@@ -75,5 +87,11 @@ export function registerPWA(onUpdate?: (reload: () => void) => void) {
       .catch(() => {
         /* noop */
       });
-  });
+  };
+
+  // registerPWA runs from an effect, so the load event may already have fired -
+  // waiting for it would mean the worker is never registered at all.
+  if (document.readyState === "complete") start();
+  else window.addEventListener("load", start, { once: true });
 }
+

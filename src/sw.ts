@@ -6,25 +6,49 @@ declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: Array<{ url: string; revision?: string | null }>;
 };
 
-const VERSION = "tillpoint-cache-v4";
+const VERSION = "tillpoint-cache-v5";
 const PRECACHE = VERSION;
-const RUNTIME = "tillpoint-runtime-v4";
+const RUNTIME = "tillpoint-runtime-v5";
+const PAGES = "tillpoint-pages-v5";
 const OFFLINE_URL = "/offline.html";
 const SYNC_TAG = "tillpoint-sales";
+const SHELL_URL = "/";
+
+// The pages a till must be able to open with no connection at all. Their
+// server-rendered HTML is cached so the app boots straight into them offline.
+const APP_PAGES = [
+  "/",
+  "/cashier",
+  "/refunds",
+  "/orders",
+  "/shift",
+  "/sync",
+  "/transactions",
+  "/manager",
+];
 
 // Injected at build time: every hashed JS/CSS/asset of the app shell.
 const PRECACHE_URLS = Array.from(
   new Set([
     ...(self.__WB_MANIFEST ?? []).map((entry) => entry.url),
-    "/",
-    OFFLINE_URL,
     "/manifest.webmanifest",
     "/favicon.ico",
     "/icons/icon-192.png",
     "/icons/icon-512.png",
     "/icons/apple-touch-icon.png",
+    OFFLINE_URL,
   ]),
 );
+
+async function cachePages(): Promise<void> {
+  const cache = await caches.open(PAGES);
+  await Promise.allSettled(
+    APP_PAGES.map(async (path) => {
+      const response = await fetch(new Request(path, { cache: "reload", credentials: "omit" }));
+      if (response.ok && !response.redirected) await cache.put(path, response.clone());
+    }),
+  );
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -34,9 +58,14 @@ self.addEventListener("install", (event) => {
       await Promise.allSettled(
         PRECACHE_URLS.map((url) => cache.add(new Request(url, { cache: "reload" }))),
       );
+      await cachePages();
+      // A fresh worker must take over immediately, otherwise the first offline
+      // launch after install has no controller and shows the browser error page.
+      await self.skipWaiting();
     })(),
   );
 });
+
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
@@ -44,7 +73,13 @@ self.addEventListener("activate", (event) => {
       const keys = await caches.keys();
       await Promise.allSettled(
         keys
-          .filter((key) => key.startsWith("tillpoint-") && key !== PRECACHE && key !== RUNTIME)
+          .filter(
+            (key) =>
+              key.startsWith("tillpoint-") &&
+              key !== PRECACHE &&
+              key !== RUNTIME &&
+              key !== PAGES,
+          )
           .map((key) => caches.delete(key)),
       );
       await self.clients.claim();
@@ -54,7 +89,11 @@ self.addEventListener("activate", (event) => {
 
 // The page decides when to swap versions so a cashier is never interrupted.
 self.addEventListener("message", (event) => {
-  if ((event.data as { type?: string } | undefined)?.type === "SKIP_WAITING") void self.skipWaiting();
+  const data = event.data as { type?: string } | undefined;
+  if (data?.type === "SKIP_WAITING") void self.skipWaiting();
+  // The app asks for a page refresh whenever it is online, so the offline
+  // copies of the HTML never go stale.
+  if (data?.type === "REFRESH_PAGES") event.waitUntil(cachePages());
 });
 
 async function cacheFirst(request: Request): Promise<Response> {
@@ -68,22 +107,36 @@ async function cacheFirst(request: Request): Promise<Response> {
   return response;
 }
 
+async function cachedPage(pathname: string): Promise<Response | undefined> {
+  const cache = await caches.open(PAGES);
+  return (
+    (await cache.match(pathname)) ??
+    (await cache.match(SHELL_URL)) ??
+    (await caches.match(SHELL_URL)) ??
+    undefined
+  );
+}
+
 async function navigationHandler(request: Request): Promise<Response> {
+  const pathname = new URL(request.url).pathname;
   try {
     const response = await fetch(request);
-    const copy = response.clone();
-    void caches.open(RUNTIME).then((cache) => cache.put("/", copy));
+    if (response.ok && !response.redirected) {
+      const copy = response.clone();
+      // Every visited page is stored under its OWN url so an offline launch
+      // renders that page, not whatever was opened last.
+      void caches.open(PAGES).then((cache) => cache.put(pathname, copy));
+    }
     return response;
   } catch {
-    // The SPA shell answers every in-app route while offline.
     return (
-      (await caches.match(request)) ??
-      (await caches.match("/")) ??
+      (await cachedPage(pathname)) ??
       (await caches.match(OFFLINE_URL)) ??
       new Response("Offline", { status: 503 })
     );
   }
 }
+
 
 self.addEventListener("fetch", (event) => {
   const request = event.request;
