@@ -4,13 +4,12 @@
 function isPreviewOrDev(): boolean {
   if (typeof window === "undefined") return true;
   try {
+    // Dev builds and embedded previews never get a worker; anything else
+    // (published Lovable domain, custom domain, Vercel) must work offline.
     if (!import.meta.env.PROD) return true;
     if (window.self !== window.top) return true;
     const h = window.location.hostname;
     if (h.startsWith("id-preview--") || h.startsWith("preview--")) return true;
-    if (h === "lovableproject.com" || h.endsWith(".lovableproject.com")) return true;
-    if (h === "lovableproject-dev.com" || h.endsWith(".lovableproject-dev.com")) return true;
-    if (h === "beta.lovable.dev" || h.endsWith(".beta.lovable.dev")) return true;
     const params = new URLSearchParams(window.location.search);
     if (params.get("sw") === "off") return true;
   } catch {
@@ -18,6 +17,7 @@ function isPreviewOrDev(): boolean {
   }
   return false;
 }
+
 
 async function unregisterAppSW() {
   if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;
