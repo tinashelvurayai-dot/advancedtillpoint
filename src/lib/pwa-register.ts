@@ -39,7 +39,8 @@ export function registerPWA(onUpdate?: (reload: () => void) => void) {
     return;
   }
   if (!("serviceWorker" in navigator)) return;
-  window.addEventListener("load", () => {
+
+  const start = () => {
     navigator.serviceWorker
       .register("/sw.js", { scope: "/" })
       .then(async (reg) => {
@@ -53,6 +54,17 @@ export function registerPWA(onUpdate?: (reload: () => void) => void) {
         } catch {
           // Storage and Background Sync are progressive enhancements.
         }
+
+        // Keep the offline copies of every till page fresh while online.
+        const refreshPages = () => {
+          if (navigator.onLine) reg.active?.postMessage({ type: "REFRESH_PAGES" });
+        };
+        refreshPages();
+        window.addEventListener("online", refreshPages);
+        void navigator.serviceWorker.ready.then((ready) => {
+          if (navigator.onLine) ready.active?.postMessage({ type: "REFRESH_PAGES" });
+        });
+
         function watch(worker: ServiceWorker | null) {
           if (!worker) return;
           worker.addEventListener("statechange", () => {
@@ -75,5 +87,11 @@ export function registerPWA(onUpdate?: (reload: () => void) => void) {
       .catch(() => {
         /* noop */
       });
-  });
+  };
+
+  // registerPWA runs from an effect, so the load event may already have fired -
+  // waiting for it would mean the worker is never registered at all.
+  if (document.readyState === "complete") start();
+  else window.addEventListener("load", start, { once: true });
 }
+
