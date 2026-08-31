@@ -6,25 +6,49 @@ declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: Array<{ url: string; revision?: string | null }>;
 };
 
-const VERSION = "tillpoint-cache-v4";
+const VERSION = "tillpoint-cache-v5";
 const PRECACHE = VERSION;
-const RUNTIME = "tillpoint-runtime-v4";
+const RUNTIME = "tillpoint-runtime-v5";
+const PAGES = "tillpoint-pages-v5";
 const OFFLINE_URL = "/offline.html";
 const SYNC_TAG = "tillpoint-sales";
+const SHELL_URL = "/";
+
+// The pages a till must be able to open with no connection at all. Their
+// server-rendered HTML is cached so the app boots straight into them offline.
+const APP_PAGES = [
+  "/",
+  "/cashier",
+  "/refunds",
+  "/orders",
+  "/shift",
+  "/sync",
+  "/transactions",
+  "/manager",
+];
 
 // Injected at build time: every hashed JS/CSS/asset of the app shell.
 const PRECACHE_URLS = Array.from(
   new Set([
     ...(self.__WB_MANIFEST ?? []).map((entry) => entry.url),
-    "/",
-    OFFLINE_URL,
     "/manifest.webmanifest",
     "/favicon.ico",
     "/icons/icon-192.png",
     "/icons/icon-512.png",
     "/icons/apple-touch-icon.png",
+    OFFLINE_URL,
   ]),
 );
+
+async function cachePages(): Promise<void> {
+  const cache = await caches.open(PAGES);
+  await Promise.allSettled(
+    APP_PAGES.map(async (path) => {
+      const response = await fetch(new Request(path, { cache: "reload", credentials: "omit" }));
+      if (response.ok && !response.redirected) await cache.put(path, response.clone());
+    }),
+  );
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -34,9 +58,14 @@ self.addEventListener("install", (event) => {
       await Promise.allSettled(
         PRECACHE_URLS.map((url) => cache.add(new Request(url, { cache: "reload" }))),
       );
+      await cachePages();
+      // A fresh worker must take over immediately, otherwise the first offline
+      // launch after install has no controller and shows the browser error page.
+      await self.skipWaiting();
     })(),
   );
 });
+
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
