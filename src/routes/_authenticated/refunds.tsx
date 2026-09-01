@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -56,6 +56,8 @@ function CashierRefundsPage() {
   const [kind, setKind] = useState<"refund" | "void">("refund");
   const [reason, setReason] = useState("");
   const [restock, setRestock] = useState(true);
+  // sale_item_id -> quantity being returned
+  const [picked, setPicked] = useState<Record<string, number>>({});
 
   const settings = useQuery({
     queryKey: ["app-settings", "auto-approve-refunds"],
@@ -83,14 +85,70 @@ function CashierRefundsPage() {
     },
   });
 
+  // The lines of the chosen sale, with whatever is still refundable on each.
+  const lines = useQuery({
+    queryKey: ["refund-sale-lines", target?.id],
+    enabled: !!target,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sale_items")
+        .select(
+          "id, quantity, unit_price, variant_id, product_variants(variant_name, products(name))",
+        )
+        .eq("sale_id", target!.id);
+      if (error) throw error;
+      const items = (data ?? []) as unknown as Array<{
+        id: string;
+        quantity: number;
+        unit_price: number;
+        product_variants: { variant_name: string; products: { name: string } | null } | null;
+      }>;
+      const { data: done } = await supabase
+        .from("refund_items")
+        .select("sale_item_id, quantity")
+        .in(
+          "sale_item_id",
+          items.map((i) => i.id),
+        );
+      const already = new Map<string, number>();
+      for (const r of (done ?? []) as Array<{ sale_item_id: string; quantity: number }>) {
+        already.set(r.sale_item_id, (already.get(r.sale_item_id) ?? 0) + Number(r.quantity));
+      }
+      return items.map((i) => ({
+        id: i.id,
+        name: i.product_variants?.products?.name ?? "Item",
+        variant: i.product_variants?.variant_name ?? "",
+        unit_price: Number(i.unit_price),
+        remaining: Number(i.quantity) - (already.get(i.id) ?? 0),
+      }));
+    },
+  });
+
+  // Default to returning everything that is still refundable.
+  useEffect(() => {
+    if (!lines.data) return;
+    setPicked(Object.fromEntries(lines.data.map((l) => [l.id, l.remaining])));
+  }, [lines.data]);
+
+  const refundTotal = (lines.data ?? []).reduce(
+    (sum, l) => sum + (picked[l.id] ?? 0) * l.unit_price,
+    0,
+  );
+
   const apply = useMutation({
     mutationFn: async () => {
       if (!target) throw new Error("Choose a sale");
-      const { error } = await supabase.rpc("refund_sale", {
+      const items = (lines.data ?? [])
+        .filter((l) => (picked[l.id] ?? 0) > 0)
+        .map((l) => ({ sale_item_id: l.id, quantity: picked[l.id] }));
+      if (kind === "refund" && items.length === 0) throw new Error("Choose at least one item");
+      const { error } = await supabase.rpc("refund_sale_items", {
         p_sale_id: target.id,
         p_kind: kind,
         p_reason: reason.trim() || undefined,
         p_restock: restock,
+        // A void always reverses the whole sale.
+        p_items: kind === "void" ? undefined : items,
       });
       if (error) throw error;
     },
@@ -232,6 +290,66 @@ function CashierRefundsPage() {
                 {formatDate(target.created_at)} ·{" "}
                 <span className="font-semibold">{formatCurrency(target.total_amount)}</span>
               </div>
+
+              {kind === "refund" && (
+                <div className="space-y-2">
+                  <Label>Which items are coming back?</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Set the quantity for each item. Leave an item at 0 if the customer is keeping
+                    it.
+                  </p>
+                  <ul className="divide-y divide-border rounded-lg border border-border">
+                    {(lines.data ?? []).map((l) => (
+                      <li key={l.id} className="flex items-center justify-between gap-3 p-3">
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-medium">
+                            {l.name} {l.variant && <span className="text-muted-foreground">· {l.variant}</span>}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {formatCurrency(l.unit_price)} each · {l.remaining} refundable
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-8 w-8"
+                            onClick={() =>
+                              setPicked((p) => ({ ...p, [l.id]: Math.max(0, (p[l.id] ?? 0) - 1) }))
+                            }
+                          >
+                            −
+                          </Button>
+                          <span className="w-6 text-center text-sm font-semibold tabular-nums">
+                            {picked[l.id] ?? 0}
+                          </span>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-8 w-8"
+                            onClick={() =>
+                              setPicked((p) => ({
+                                ...p,
+                                [l.id]: Math.min(l.remaining, (p[l.id] ?? 0) + 1),
+                              }))
+                            }
+                          >
+                            +
+                          </Button>
+                        </div>
+                      </li>
+                    ))}
+                    {lines.isLoading && (
+                      <li className="p-3 text-sm text-muted-foreground">Loading items...</li>
+                    )}
+                  </ul>
+                  <div className="flex items-center justify-between rounded-lg bg-muted p-3 text-sm">
+                    <span>Amount to refund</span>
+                    <span className="font-semibold">{formatCurrency(refundTotal)}</span>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="reason">Reason</Label>
                 <Textarea
@@ -242,6 +360,7 @@ function CashierRefundsPage() {
                   placeholder="Wrong item, customer returned goods, entered twice..."
                 />
               </div>
+
               <div className="flex items-center justify-between rounded-lg border border-border p-3">
                 <div>
                   <div className="text-sm font-medium">Return items to stock</div>

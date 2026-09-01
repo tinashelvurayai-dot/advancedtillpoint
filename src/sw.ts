@@ -6,10 +6,10 @@ declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: Array<{ url: string; revision?: string | null }>;
 };
 
-const VERSION = "tillpoint-cache-v5";
+const VERSION = "tillpoint-cache-v6";
 const PRECACHE = VERSION;
-const RUNTIME = "tillpoint-runtime-v5";
-const PAGES = "tillpoint-pages-v5";
+const RUNTIME = "tillpoint-runtime-v6";
+const PAGES = "tillpoint-pages-v6";
 const OFFLINE_URL = "/offline.html";
 const SYNC_TAG = "tillpoint-sales";
 const SHELL_URL = "/";
@@ -31,6 +31,8 @@ const APP_PAGES = [
 const PRECACHE_URLS = Array.from(
   new Set([
     ...(self.__WB_MANIFEST ?? []).map((entry) => entry.url),
+    // The app shell answers any route the device has never visited.
+    SHELL_URL,
     "/manifest.webmanifest",
     "/favicon.ico",
     "/icons/icon-192.png",
@@ -112,7 +114,8 @@ async function cachedPage(pathname: string): Promise<Response | undefined> {
   return (
     (await cache.match(pathname)) ??
     (await cache.match(SHELL_URL)) ??
-    (await caches.match(SHELL_URL)) ??
+    (await caches.match(SHELL_URL, { ignoreSearch: true })) ??
+    (await caches.match(new Request(SHELL_URL))) ??
     undefined
   );
 }
@@ -122,10 +125,15 @@ async function navigationHandler(request: Request): Promise<Response> {
   try {
     const response = await fetch(request);
     if (response.ok && !response.redirected) {
-      const copy = response.clone();
       // Every visited page is stored under its OWN url so an offline launch
-      // renders that page, not whatever was opened last.
-      void caches.open(PAGES).then((cache) => cache.put(pathname, copy));
+      // renders that page, not whatever was opened last - and a copy always
+      // refreshes the shell, which answers routes never visited before.
+      const pageCopy = response.clone();
+      const shellCopy = response.clone();
+      void caches.open(PAGES).then(async (cache) => {
+        await cache.put(pathname, pageCopy);
+        if (!(await cache.match(SHELL_URL))) await cache.put(SHELL_URL, shellCopy);
+      });
     }
     return response;
   } catch {
