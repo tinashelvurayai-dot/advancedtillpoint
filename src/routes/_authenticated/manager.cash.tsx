@@ -45,11 +45,31 @@ function DailyCashPage() {
       const { data, error } = await supabase
         .from("sales")
         .select("total_amount, created_at, payment_type")
-        // Reversed sales never counted as cash in the drawer.
-        .not("status", "in", "(refunded,voided)")
+        // Voided sales never happened; refunded and partly refunded sales stay
+        // in the takings and are netted off through the refunds figure below.
+        .not("status", "eq", "voided")
         .gte("created_at", since.toISOString());
       if (error) throw error;
       return data ?? [];
+    },
+  });
+
+  const refundsToday = useQuery({
+    queryKey: ["cash-refunds"],
+    queryFn: async () => {
+      const since = new Date();
+      since.setDate(since.getDate() - 30);
+      const { data, error } = await supabase
+        .from("refunds")
+        .select("amount, kind, created_at, sale:sales(payment_type)")
+        .gte("created_at", since.toISOString());
+      if (error) throw error;
+      return (data ?? []) as Array<{
+        amount: number;
+        kind: string;
+        created_at: string;
+        sale: { payment_type: string } | null;
+      }>;
     },
   });
 
@@ -75,10 +95,18 @@ function DailyCashPage() {
       .reduce((s, e) => s + Number(e.amount), 0);
     const total30 = list.reduce((s, e) => s + Number(e.amount), 0);
 
-    // Expected today from sales (cash only)
-    const cashSalesToday = (salesToday.data ?? [])
+    // Takings today from sales (cash only)
+    const grossCashSalesToday = (salesToday.data ?? [])
       .filter((s) => s.payment_type === "cash" && s.created_at.slice(0, 10) === today)
       .reduce((s, r) => s + Number(r.total_amount), 0);
+    // Money handed back today on cash sales - full, partial or voided.
+    const refundsTodayTotal = (refundsToday.data ?? [])
+      .filter(
+        (r) =>
+          String(r.created_at).slice(0, 10) === today && r.sale?.payment_type === "cash",
+      )
+      .reduce((s, r) => s + Number(r.amount), 0);
+    const cashSalesToday = grossCashSalesToday - refundsTodayTotal;
     // Cash paid out for expenses on the same day reduces the cash that should
     // still be in the drawer, so the collection balances against it.
     const expensesToday = (expenses.data ?? [])
@@ -91,12 +119,15 @@ function DailyCashPage() {
       todayTotal: Number(todayEntry?.amount ?? 0),
       total7,
       total30,
+      grossCashSalesToday,
+      refundsTodayTotal,
       cashSalesToday,
       expensesToday,
       expectedToday,
       variance,
     };
-  }, [entries.data, salesToday.data, expenses.data]);
+  }, [entries.data, salesToday.data, refundsToday.data, expenses.data]);
+
 
   const add = useMutation({
     mutationFn: async () => {
