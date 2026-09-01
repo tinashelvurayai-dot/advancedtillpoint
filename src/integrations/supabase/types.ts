@@ -291,6 +291,61 @@ export type Database = {
           },
         ]
       }
+      refund_items: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          quantity: number
+          refund_id: string
+          sale_item_id: string
+          unit_price: number
+          variant_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          quantity: number
+          refund_id: string
+          sale_item_id: string
+          unit_price?: number
+          variant_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          quantity?: number
+          refund_id?: string
+          sale_item_id?: string
+          unit_price?: number
+          variant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refund_items_refund_id_fkey"
+            columns: ["refund_id"]
+            isOneToOne: false
+            referencedRelation: "refunds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refund_items_sale_item_id_fkey"
+            columns: ["sale_item_id"]
+            isOneToOne: false
+            referencedRelation: "sale_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "refund_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       refunds: {
         Row: {
           amount: number
@@ -649,6 +704,16 @@ export type Database = {
       }
       refund_sale: {
         Args: {
+          p_kind?: string
+          p_reason?: string
+          p_restock?: boolean
+          p_sale_id: string
+        }
+        Returns: string
+      }
+      refund_sale_items: {
+        Args: {
+          p_items?: Json
           p_kind?: string
           p_reason?: string
           p_restock?: boolean
