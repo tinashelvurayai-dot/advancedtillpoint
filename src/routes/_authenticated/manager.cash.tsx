@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { Wallet, TrendingUp, TrendingDown, Calendar, Trash2 } from "lucide-react";
+import { Wallet, TrendingUp, TrendingDown, Calendar, Trash2, Undo2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -210,7 +210,8 @@ function DailyCashPage() {
               {add.isPending ? "Saving…" : "Record collection"}
             </Button>
             <div className="rounded-md border border-blue-100 bg-blue-50/60 p-3 text-xs text-slate-700">
-              Balance check for today: cash sales {formatCurrency(stats.cashSalesToday)} - expenses{" "}
+              Balance check for today: cash sales {formatCurrency(stats.grossCashSalesToday)} -
+              refunds {formatCurrency(stats.refundsTodayTotal)} - expenses{" "}
               {formatCurrency(stats.expensesToday)} = {formatCurrency(stats.expectedToday)} expected
               against {formatCurrency(stats.todayTotal)} collected.
             </div>
