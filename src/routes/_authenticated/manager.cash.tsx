@@ -162,12 +162,14 @@ function DailyCashPage() {
 
   const cards = [
     { label: "Today's collection", value: formatCurrency(stats.todayTotal), icon: Wallet, tint: "text-blue-600" },
-    { label: "Cash sales today", value: formatCurrency(stats.cashSalesToday), icon: Calendar, tint: "text-slate-600" },
+    { label: "Cash sales today (after refunds)", value: formatCurrency(stats.cashSalesToday), icon: Calendar, tint: "text-slate-600" },
+    { label: "Refunds & voids today", value: formatCurrency(stats.refundsTodayTotal), icon: Undo2, tint: "text-destructive" },
     { label: "Expenses today", value: formatCurrency(stats.expensesToday), icon: TrendingDown, tint: "text-amber-600" },
-    { label: "Expected in drawer (sales - expenses)", value: formatCurrency(stats.expectedToday), icon: Wallet, tint: "text-slate-600" },
+    { label: "Expected in drawer (sales - refunds - expenses)", value: formatCurrency(stats.expectedToday), icon: Wallet, tint: "text-slate-600" },
     { label: "Variance today", value: formatCurrency(stats.variance), icon: stats.variance >= 0 ? TrendingUp : TrendingDown, tint: stats.variance >= 0 ? "text-emerald-600" : "text-destructive" },
     { label: "Last 7 days", value: formatCurrency(stats.total7), icon: TrendingUp, tint: "text-blue-600" },
   ];
+
 
   return (
     <div className="p-6 md:p-10">
