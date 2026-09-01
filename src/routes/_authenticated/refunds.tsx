@@ -290,6 +290,66 @@ function CashierRefundsPage() {
                 {formatDate(target.created_at)} ·{" "}
                 <span className="font-semibold">{formatCurrency(target.total_amount)}</span>
               </div>
+
+              {kind === "refund" && (
+                <div className="space-y-2">
+                  <Label>Which items are coming back?</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Set the quantity for each item. Leave an item at 0 if the customer is keeping
+                    it.
+                  </p>
+                  <ul className="divide-y divide-border rounded-lg border border-border">
+                    {(lines.data ?? []).map((l) => (
+                      <li key={l.id} className="flex items-center justify-between gap-3 p-3">
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-medium">
+                            {l.name} {l.variant && <span className="text-muted-foreground">· {l.variant}</span>}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {formatCurrency(l.unit_price)} each · {l.remaining} refundable
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-8 w-8"
+                            onClick={() =>
+                              setPicked((p) => ({ ...p, [l.id]: Math.max(0, (p[l.id] ?? 0) - 1) }))
+                            }
+                          >
+                            −
+                          </Button>
+                          <span className="w-6 text-center text-sm font-semibold tabular-nums">
+                            {picked[l.id] ?? 0}
+                          </span>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-8 w-8"
+                            onClick={() =>
+                              setPicked((p) => ({
+                                ...p,
+                                [l.id]: Math.min(l.remaining, (p[l.id] ?? 0) + 1),
+                              }))
+                            }
+                          >
+                            +
+                          </Button>
+                        </div>
+                      </li>
+                    ))}
+                    {lines.isLoading && (
+                      <li className="p-3 text-sm text-muted-foreground">Loading items...</li>
+                    )}
+                  </ul>
+                  <div className="flex items-center justify-between rounded-lg bg-muted p-3 text-sm">
+                    <span>Amount to refund</span>
+                    <span className="font-semibold">{formatCurrency(refundTotal)}</span>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="reason">Reason</Label>
                 <Textarea
@@ -300,6 +360,7 @@ function CashierRefundsPage() {
                   placeholder="Wrong item, customer returned goods, entered twice..."
                 />
               </div>
+
               <div className="flex items-center justify-between rounded-lg border border-border p-3">
                 <div>
                   <div className="text-sm font-medium">Return items to stock</div>
