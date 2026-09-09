@@ -7,7 +7,6 @@ import { useState } from "react";
 import {
   LayoutDashboard,
   Package,
-  Boxes,
   Users,
   Receipt,
   BookOpen,
@@ -41,8 +40,7 @@ const navItems: Array<{
 }> = [
   { to: "/manager", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/manager/products", label: "Products", icon: Package },
-  { to: "/manager/stock", label: "Stock", icon: Boxes },
-  { to: "/manager/stock-in", label: "Stock-In Records", icon: ClipboardList },
+  { to: "/manager/stock-in", label: "Stock-in Record", icon: ClipboardList },
   { to: "/manager/alerts", label: "Low Stock Alerts", icon: AlertTriangle },
   { to: "/manager/sales", label: "Sales", icon: Receipt },
   { to: "/manager/refunds", label: "Refunds & Voids", icon: Undo2 },
