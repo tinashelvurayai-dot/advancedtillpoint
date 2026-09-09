@@ -54,6 +54,7 @@ import {
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { toast } from "sonner";
+import { useOnline } from "@/hooks/use-online";
 
 export const Route = createFileRoute("/_authenticated/manager/stock-in")({
   component: StockInRecordsPage,
@@ -103,6 +104,7 @@ const blank = {
 
 function StockInRecordsPage() {
   const qc = useQueryClient();
+  const online = useOnline();
   const [form, setForm] = useState(blank);
   const [editing, setEditing] = useState<RecordRow | null>(null);
   const [search, setSearch] = useState("");
@@ -185,6 +187,7 @@ function StockInRecordsPage() {
 
   const save = useMutation({
     mutationFn: async () => {
+      if (!online) throw new Error("Reconnect before saving stock changes. Cached stock remains available offline.");
       const variant = variants.data?.find((v) => v.id === form.variantId);
       const stockId = editing?.stock_id ?? variant?.stock?.[0]?.id;
       if (!form.variantId) throw new Error("Choose a product variant");
@@ -237,6 +240,7 @@ function StockInRecordsPage() {
       unitPrice: number;
       supplierId: string;
     }) => {
+      if (!online) throw new Error("Reconnect before adding stock. Cached stock remains available offline.");
       if (!row.variant) throw new Error("Missing variant");
       const { error } = await (supabase as any).rpc("record_stock_in", {
         p_stock_id: row.id,
@@ -366,7 +370,7 @@ function StockInRecordsPage() {
           <ClipboardList className="h-6 w-6" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Stock-In Record</h1>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Stock-in Record</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Deliveries, buying costs, suppliers and live stock control in one place.
             {flaggedOutCount > 0 && (
@@ -426,6 +430,12 @@ function StockInRecordsPage() {
               </div>
             </div>
           </div>
+        </Card>
+      )}
+
+      {!online && (
+        <Card className="mb-6 border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+          You are viewing the last synchronized stock-in data. Remote stock changes are disabled until the connection returns, so this page never reports an offline write as saved.
         </Card>
       )}
 
@@ -551,7 +561,7 @@ function StockInRecordsPage() {
               />
             </div>
             <div className="flex gap-2">
-              <Button onClick={() => save.mutate()} disabled={save.isPending}>
+              <Button onClick={() => save.mutate()} disabled={save.isPending || !online}>
                 {save.isPending ? "Saving..." : editing ? "Save changes" : "Record stock-in"}
               </Button>
               {editing && (
@@ -768,7 +778,7 @@ function StockInRecordsPage() {
                 </select>
               </div>
               <DialogFooter>
-                <Button type="submit" disabled={quickAdd.isPending}>
+                <Button type="submit" disabled={quickAdd.isPending || !online}>
                   {quickAdd.isPending ? "Adding..." : "Add to stock"}
                 </Button>
               </DialogFooter>

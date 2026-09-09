@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { DollarSign, ShoppingBag, Package, AlertTriangle, BadgePercent } from "lucide-react";
+import { DollarSign, ShoppingBag, Package, AlertTriangle, ArrowRight } from "lucide-react";
 import { SyncIndicator, useSyncState } from "@/components/sync-indicator";
 import { readLog, subscribeLog, type TxLogEntry } from "@/lib/transaction-log";
 import { getQueue, subscribeQueue, type QueuedSale } from "@/lib/offline-queue";
@@ -78,48 +78,27 @@ export const Route = createFileRoute("/_authenticated/manager/")({
   component: ManagerDashboard,
 });
 
-function SystemPriceBanner() {
+function OperationsBanner() {
   const navigate = useNavigate();
-  const [taps, setTaps] = useState(0);
-  const original = 370;
-  const current = 170;
-  const savings = original - current;
-  const pct = Math.round((savings / original) * 100);
   return (
-    <section className="mb-8 overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-blue-600 via-indigo-600 to-fuchsia-600 p-6 text-white shadow-[var(--shadow-elev-2)] md:p-8">
-      <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-        <div className="flex-1">
-          <h2 className="text-2xl font-bold md:text-3xl">System Price</h2>
-
-          <p className="mt-1 max-w-xl text-sm text-white/80">
-            Full TillPoint Retail OS - variant inventory, dual-role dashboards, offline till, live
-            analytics, AI forecasting and more. One-time price.
+    <section className="mb-8 rounded-2xl border border-primary/20 bg-primary p-6 text-primary-foreground shadow-[var(--shadow-elev-2)] md:p-8">
+      <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-foreground/70">
+            Manager operations
+          </p>
+          <h2 className="mt-2 text-2xl font-bold md:text-3xl">Keep today&apos;s shop moving</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-primary-foreground/80">
+            Record deliveries, review stock health, and resolve pending offline sales from one operational workspace.
           </p>
         </div>
-        <div className="flex flex-col items-start gap-2 md:items-end">
-          <div className="flex items-baseline gap-3">
-            <span className="text-lg font-medium text-white/60 line-through">${original}</span>
-            <button
-              type="button"
-              className="text-5xl font-extrabold tracking-tight"
-              onClick={() => {
-                const next = taps + 1;
-                setTaps(next);
-                if (next >= 10) {
-                  setTaps(0);
-                  void navigate({ to: "/manager/agreement" });
-                }
-              }}
-              aria-label="Open handover agreement"
-            >
-              ${current}
-            </button>
-            <span className="text-sm font-semibold text-white/80">USD</span>
-          </div>
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/90 px-3 py-1 text-xs font-bold uppercase text-emerald-950">
-            <BadgePercent className="h-3.5 w-3.5" /> Save ${savings} · {pct}% off
-          </div>
-        </div>
+        <Button
+          variant="secondary"
+          onClick={() => void navigate({ to: "/manager/stock-in" })}
+          className="shrink-0"
+        >
+          <ArrowRight className="mr-2 h-4 w-4" /> Open stock-in record
+        </Button>
       </div>
     </section>
   );
@@ -221,7 +200,7 @@ function ManagerDashboard() {
 
       <PendingSyncNotice />
 
-      <SystemPriceBanner />
+      <OperationsBanner />
 
       <SyncOverview />
 
