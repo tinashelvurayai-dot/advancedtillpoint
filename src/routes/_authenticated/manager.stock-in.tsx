@@ -9,6 +9,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -24,7 +39,18 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { Check, ChevronsUpDown, ClipboardList, Pencil, Plus, Search } from "lucide-react";
+import {
+  AlertTriangle,
+  Boxes,
+  Check,
+  ChevronsUpDown,
+  ClipboardList,
+  DollarSign,
+  Pencil,
+  Plus,
+  Search,
+  TrendingDown,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { toast } from "sonner";
@@ -52,6 +78,20 @@ type RecordRow = {
   variant: Variant | null;
   supplier: { name: string } | null;
 };
+type StockRow = {
+  id: string;
+  quantity: number;
+  low_stock_alert_level: number;
+  available?: boolean;
+  variant: {
+    id: string;
+    variant_name: string;
+    size: string | null;
+    price: number;
+    product: { name: string; category: string | null } | null;
+  } | null;
+};
+
 const blank = {
   variantId: "",
   supplierId: "none",
@@ -71,19 +111,29 @@ function StockInRecordsPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
+  // Stock control state
+  const [filter, setFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "low" | "out" | "ok">("all");
+  const [addStockFor, setAddStockFor] = useState<StockRow | null>(null);
+  const [editPriceFor, setEditPriceFor] = useState<StockRow | null>(null);
+
+  const invalidateAll = () => {
+    ["stock-in-records", "stock", "stock-in-variants", "products", "cashier", "restock-orders"].forEach(
+      (key) => qc.invalidateQueries({ queryKey: [key] }),
+    );
+  };
+
   useEffect(() => {
     const channel = supabase
       .channel("stock-in-live")
       .on("postgres_changes", { event: "*", schema: "public", table: "stock_in_records" }, () => {
-        void qc.invalidateQueries({ queryKey: ["stock-in-records"] });
-        void qc.invalidateQueries({ queryKey: ["stock"] });
-        void qc.invalidateQueries({ queryKey: ["products"] });
-        void qc.invalidateQueries({ queryKey: ["cashier"] });
+        invalidateAll();
       })
       .subscribe();
     return () => {
       void supabase.removeChannel(channel);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qc]);
 
   const variants = useQuery({
@@ -119,15 +169,29 @@ function StockInRecordsPage() {
       return data as unknown as RecordRow[];
     },
   });
+  const stock = useQuery({
+    queryKey: ["stock", "list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("stock")
+        .select(
+          "id, quantity, low_stock_alert_level, available, variant:product_variants(id, variant_name, size, price, product:products(name, category))",
+        )
+        .order("quantity");
+      if (error) throw error;
+      return data as unknown as StockRow[];
+    },
+  });
 
   const save = useMutation({
     mutationFn: async () => {
       const variant = variants.data?.find((v) => v.id === form.variantId);
       const stockId = editing?.stock_id ?? variant?.stock?.[0]?.id;
-      if (!stockId || !form.variantId) throw new Error("Choose a product variant");
+      if (!form.variantId) throw new Error("Choose a product variant");
+      if (!stockId) throw new Error("This variant has no stock record yet");
       const quantity = Number(form.quantity);
       const price = Number(form.price);
-      if (!Number.isInteger(quantity) || quantity <= 0 || price < 0)
+      if (!Number.isInteger(quantity) || quantity <= 0 || !(price >= 0))
         throw new Error("Enter a valid quantity and buying price");
       if (editing) {
         const { error } = await (supabase as any).rpc("update_stock_in_record", {
@@ -154,11 +218,87 @@ function StockInRecordsPage() {
     },
     onSuccess: () => {
       toast.success(editing ? "Stock-in record updated" : "Stock-in recorded");
-      setForm(blank);
+      setForm({ ...blank, receivedAt: new Date().toISOString().slice(0, 16) });
       setEditing(null);
-      ["stock-in-records", "stock", "products", "cashier", "restock-orders"].forEach((key) =>
-        qc.invalidateQueries({ queryKey: [key] }),
+      invalidateAll();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const quickAdd = useMutation({
+    mutationFn: async ({
+      row,
+      add,
+      unitPrice,
+      supplierId,
+    }: {
+      row: StockRow;
+      add: number;
+      unitPrice: number;
+      supplierId: string;
+    }) => {
+      if (!row.variant) throw new Error("Missing variant");
+      const { error } = await (supabase as any).rpc("record_stock_in", {
+        p_stock_id: row.id,
+        p_variant_id: row.variant.id,
+        p_quantity: add,
+        p_unit_buying_price: unitPrice,
+        p_supplier_id: supplierId === "none" ? null : supplierId,
+        p_received_at: new Date().toISOString(),
+        p_notes: "Quick stock-in from stock table",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Stock added and recorded");
+      setAddStockFor(null);
+      invalidateAll();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const updateStock = useMutation({
+    mutationFn: async ({ id, quantity, low }: { id: string; quantity: number; low: number }) => {
+      const { error } = await supabase
+        .from("stock")
+        .update({ quantity, low_stock_alert_level: low })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Stock updated");
+      invalidateAll();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const updatePrice = useMutation({
+    mutationFn: async ({ variant_id, price }: { variant_id: string; price: number }) => {
+      const { error } = await supabase
+        .from("product_variants")
+        .update({ price })
+        .eq("id", variant_id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Selling price updated");
+      setEditPriceFor(null);
+      invalidateAll();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const markAvailable = useMutation({
+    mutationFn: async (variant_id: string) => {
+      const { error } = await supabase.rpc(
+        "mark_variant_available" as any,
+        { _variant_id: variant_id } as any,
       );
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Marked as available");
+      invalidateAll();
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -181,6 +321,27 @@ function StockInRecordsPage() {
   }, [records.data, search, supplierFilter, from, to]);
   const total = filtered.reduce((sum, r) => sum + Number(r.total_cost), 0);
 
+  const rows = stock.data ?? [];
+  const stats = useMemo(() => {
+    const totalUnits = rows.reduce((s, r) => s + r.quantity, 0);
+    const inventoryValue = rows.reduce((s, r) => s + r.quantity * Number(r.variant?.price ?? 0), 0);
+    const out = rows.filter((r) => r.quantity === 0).length;
+    const low = rows.filter((r) => r.quantity > 0 && r.quantity <= r.low_stock_alert_level).length;
+    return { totalUnits, inventoryValue, out, low, skus: rows.length };
+  }, [rows]);
+
+  const stockFiltered = rows.filter((r) => {
+    const q = filter.toLowerCase();
+    const matchQ =
+      !q ||
+      r.variant?.variant_name.toLowerCase().includes(q) ||
+      r.variant?.product?.name.toLowerCase().includes(q);
+    const status = r.quantity === 0 ? "out" : r.quantity <= r.low_stock_alert_level ? "low" : "ok";
+    const matchS = statusFilter === "all" || status === statusFilter;
+    return matchQ && matchS;
+  });
+  const flaggedOutCount = rows.filter((r) => r.available === false).length;
+
   function editRecord(record: RecordRow) {
     setEditing(record);
     setForm({
@@ -191,10 +352,11 @@ function StockInRecordsPage() {
       receivedAt: record.received_at.slice(0, 16),
       notes: record.notes ?? "",
     });
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   }
   function resetForm() {
     setEditing(null);
-    setForm(blank);
+    setForm({ ...blank, receivedAt: new Date().toISOString().slice(0, 16) });
   }
 
   return (
@@ -204,13 +366,69 @@ function StockInRecordsPage() {
           <ClipboardList className="h-6 w-6" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Stock-In Records</h1>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Stock-In Record</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            A complete, searchable register of deliveries, buying costs, suppliers, and inventory
-            movement.
+            Deliveries, buying costs, suppliers and live stock control in one place.
+            {flaggedOutCount > 0 && (
+              <>
+                {" "}
+                ·{" "}
+                <span className="font-semibold text-destructive">
+                  {flaggedOutCount} flagged out by cashiers
+                </span>
+              </>
+            )}
           </p>
         </div>
       </header>
+
+      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+        <StatCard
+          icon={<Boxes className="h-5 w-5 text-blue-600" />}
+          label="SKUs"
+          value={stats.skus.toString()}
+          tone="blue"
+        />
+        <StatCard
+          icon={<Boxes className="h-5 w-5 text-slate-600" />}
+          label="Units on hand"
+          value={stats.totalUnits.toLocaleString()}
+          tone="slate"
+        />
+        <StatCard
+          icon={<DollarSign className="h-5 w-5 text-emerald-600" />}
+          label="Inventory value"
+          value={formatCurrency(stats.inventoryValue)}
+          tone="emerald"
+        />
+        <StatCard
+          icon={<AlertTriangle className="h-5 w-5 text-amber-600" />}
+          label="Low / Out"
+          value={`${stats.low} / ${stats.out}`}
+          tone="amber"
+        />
+      </div>
+
+      {(stats.low > 0 || stats.out > 0) && (
+        <Card className="mb-6 border-amber-300 bg-amber-50 p-4">
+          <div className="flex items-start gap-3">
+            <TrendingDown className="mt-0.5 h-5 w-5 text-amber-600" />
+            <div className="text-sm text-amber-900">
+              <div className="font-semibold">Smart alert</div>
+              <div>
+                {stats.out > 0 && (
+                  <>
+                    {stats.out} item{stats.out === 1 ? "" : "s"} out of stock.{" "}
+                  </>
+                )}
+                {stats.low > 0 && <>{stats.low} running low. </>}
+                Record a delivery below to top them up.
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
         <Card className="h-fit p-5">
           <h2 className="mb-4 flex items-center gap-2 font-semibold">
@@ -344,6 +562,7 @@ function StockInRecordsPage() {
             </div>
           </div>
         </Card>
+
         <Card className="p-5">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -429,6 +648,294 @@ function StockInRecordsPage() {
           </div>
         </Card>
       </div>
+
+      <Card className="mt-6 p-4 sm:p-5">
+        <div className="mb-4">
+          <h2 className="font-semibold">Stock control</h2>
+          <p className="text-sm text-muted-foreground">
+            Live quantities, low-stock levels, selling prices and availability.
+          </p>
+        </div>
+        <div className="mb-4 flex flex-wrap gap-2">
+          <Input
+            placeholder="Search product or variant..."
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="max-w-sm"
+          />
+          <div className="flex gap-1">
+            {(["all", "ok", "low", "out"] as const).map((s) => (
+              <Button
+                key={s}
+                size="sm"
+                variant={statusFilter === s ? "default" : "outline"}
+                onClick={() => setStatusFilter(s)}
+              >
+                {s === "all" ? "All" : s === "ok" ? "In stock" : s === "low" ? "Low" : "Out"}
+              </Button>
+            ))}
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Product</TableHead>
+                <TableHead>Variant</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead>Qty</TableHead>
+                <TableHead>Low alert</TableHead>
+                <TableHead>Value</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {stockFiltered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center text-muted-foreground">
+                    {stock.isLoading ? "Loading stock..." : "No stock matches."}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                stockFiltered.map((r) => (
+                  <StockEditor
+                    key={r.id}
+                    row={r}
+                    onSave={(q, l) => updateStock.mutate({ id: r.id, quantity: q, low: l })}
+                    onAdd={() => setAddStockFor(r)}
+                    onEditPrice={() => setEditPriceFor(r)}
+                    onMarkAvailable={() => r.variant && markAvailable.mutate(r.variant.id)}
+                    pending={updateStock.isPending}
+                    markPending={markAvailable.isPending}
+                  />
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
+
+      <Dialog open={!!addStockFor} onOpenChange={(o) => !o && setAddStockFor(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add stock - {addStockFor?.variant?.product?.name}</DialogTitle>
+          </DialogHeader>
+          {addStockFor && (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const fd = new FormData(e.currentTarget);
+                const add = parseInt(String(fd.get("add") ?? "0"), 10) || 0;
+                const unitPrice = parseFloat(String(fd.get("unitPrice") ?? "0")) || 0;
+                const supplierId = String(fd.get("supplierId") ?? "none");
+                if (add > 0) quickAdd.mutate({ row: addStockFor, add, unitPrice, supplierId });
+              }}
+              className="space-y-4"
+            >
+              <div className="text-sm text-muted-foreground">
+                Current: <span className="font-medium text-foreground">{addStockFor.quantity}</span>{" "}
+                units
+              </div>
+              <div className="space-y-2">
+                <Label>Units brought in</Label>
+                <Input name="add" type="number" min="1" required autoFocus placeholder="e.g. 10" />
+              </div>
+              <div className="space-y-2">
+                <Label>Unit buying price</Label>
+                <Input
+                  name="unitPrice"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  required
+                  placeholder="e.g. 4.50"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Supplier</Label>
+                <select
+                  name="supplierId"
+                  defaultValue="none"
+                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="none">No supplier</option>
+                  {(suppliers.data ?? []).map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <DialogFooter>
+                <Button type="submit" disabled={quickAdd.isPending}>
+                  {quickAdd.isPending ? "Adding..." : "Add to stock"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editPriceFor} onOpenChange={(o) => !o && setEditPriceFor(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit price - {editPriceFor?.variant?.variant_name}</DialogTitle>
+          </DialogHeader>
+          {editPriceFor?.variant && (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const fd = new FormData(e.currentTarget);
+                const price = parseFloat(String(fd.get("price") ?? "0"));
+                if (price >= 0) updatePrice.mutate({ variant_id: editPriceFor.variant!.id, price });
+              }}
+              className="space-y-4"
+            >
+              <div className="space-y-2">
+                <Label>New selling price</Label>
+                <Input
+                  name="price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  defaultValue={Number(editPriceFor.variant.price)}
+                  required
+                  autoFocus
+                />
+              </div>
+              <DialogFooter>
+                <Button type="submit" disabled={updatePrice.isPending}>
+                  Save
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+function StatCard({
+  icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  tone: "blue" | "slate" | "emerald" | "amber";
+}) {
+  const bg = {
+    blue: "bg-blue-50 border-blue-200",
+    slate: "bg-slate-50 border-slate-200",
+    emerald: "bg-emerald-50 border-emerald-200",
+    amber: "bg-amber-50 border-amber-200",
+  }[tone];
+  return (
+    <Card className={`border p-4 ${bg}`}>
+      <div className="flex items-center gap-2 text-xs font-medium text-slate-600">
+        {icon}
+        <span>{label}</span>
+      </div>
+      <div className="mt-2 text-xl font-bold text-slate-900 sm:text-2xl">{value}</div>
+    </Card>
+  );
+}
+
+function StockEditor({
+  row,
+  onSave,
+  onAdd,
+  onEditPrice,
+  onMarkAvailable,
+  pending,
+  markPending,
+}: {
+  row: StockRow;
+  onSave: (q: number, l: number) => void;
+  onAdd: () => void;
+  onEditPrice: () => void;
+  onMarkAvailable: () => void;
+  pending: boolean;
+  markPending: boolean;
+}) {
+  const [q, setQ] = useState(row.quantity);
+  const [l, setL] = useState(row.low_stock_alert_level);
+  useEffect(() => {
+    setQ(row.quantity);
+    setL(row.low_stock_alert_level);
+  }, [row.quantity, row.low_stock_alert_level]);
+  const dirty = q !== row.quantity || l !== row.low_stock_alert_level;
+  const flaggedOut = row.available === false;
+  const status = flaggedOut ? "flagged" : q === 0 ? "out" : q <= l ? "low" : "ok";
+  const value = q * Number(row.variant?.price ?? 0);
+  return (
+    <TableRow className={flaggedOut ? "bg-red-50/50" : undefined}>
+      <TableCell className="font-medium">{row.variant?.product?.name}</TableCell>
+      <TableCell>
+        <div>{row.variant?.variant_name}</div>
+        <div className="text-xs text-muted-foreground">{row.variant?.size}</div>
+      </TableCell>
+      <TableCell>
+        <button
+          onClick={onEditPrice}
+          className="inline-flex items-center gap-1 rounded px-1 hover:bg-blue-50 hover:text-blue-700"
+        >
+          {formatCurrency(row.variant?.price ?? 0)}
+        </button>
+      </TableCell>
+      <TableCell>
+        <Input
+          type="number"
+          min={0}
+          value={q}
+          onChange={(e) => setQ(Number(e.target.value) || 0)}
+          className="w-20"
+        />
+      </TableCell>
+      <TableCell>
+        <Input
+          type="number"
+          min={0}
+          value={l}
+          onChange={(e) => setL(Number(e.target.value) || 0)}
+          className="w-20"
+        />
+      </TableCell>
+      <TableCell className="text-sm text-muted-foreground">{formatCurrency(value)}</TableCell>
+      <TableCell>
+        {status === "flagged" ? (
+          <Badge variant="destructive">Flagged out</Badge>
+        ) : status === "out" ? (
+          <Badge variant="destructive">Out</Badge>
+        ) : status === "low" ? (
+          <Badge className="bg-amber-500 text-white">Low</Badge>
+        ) : (
+          <Badge variant="secondary">OK</Badge>
+        )}
+      </TableCell>
+      <TableCell>
+        <div className="flex flex-wrap gap-1">
+          <Button size="sm" variant="outline" onClick={onAdd} aria-label="Add stock">
+            <Plus className="h-3.5 w-3.5" />
+          </Button>
+          <Button size="sm" disabled={!dirty || pending} onClick={() => onSave(q, l)}>
+            Save
+          </Button>
+          <Button
+            size="sm"
+            variant={flaggedOut ? "default" : "outline"}
+            disabled={markPending}
+            onClick={onMarkAvailable}
+            className={flaggedOut ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+          >
+            Stock Available
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
   );
 }
