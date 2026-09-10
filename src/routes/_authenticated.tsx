@@ -39,10 +39,10 @@ function AuthGate() {
       .catch(() => undefined);
   }, [hydrated, loading, unlocked, session]);
 
-  if (!hydrated || loading) {
+  if (!hydrated || (loading && typeof navigator !== "undefined" && navigator.onLine)) {
     return (
       <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-        Loading...
+        Loading TillPoint...
       </div>
     );
   }
