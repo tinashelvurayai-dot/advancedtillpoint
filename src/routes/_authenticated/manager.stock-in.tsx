@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -30,28 +29,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
 import {
   AlertTriangle,
   Boxes,
-  Check,
-  ChevronsUpDown,
   ClipboardList,
   DollarSign,
-  Pencil,
   Plus,
   Search,
   TrendingDown,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { toast } from "sonner";
 import { useOnline } from "@/hooks/use-online";
@@ -253,7 +239,10 @@ function StockInRecordsPage() {
       });
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await qc.refetchQueries({ queryKey: ["stock", "list"] });
+      await qc.refetchQueries({ queryKey: ["stock-in-records"] });
+      await qc.refetchQueries({ queryKey: ["stock-in-variants"] });
       toast.success("Stock added and recorded");
       setAddStockFor(null);
       invalidateAll();
@@ -287,21 +276,6 @@ function StockInRecordsPage() {
     onSuccess: () => {
       toast.success("Selling price updated");
       setEditPriceFor(null);
-      invalidateAll();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const markAvailable = useMutation({
-    mutationFn: async (variant_id: string) => {
-      const { error } = await supabase.rpc(
-        "mark_variant_available" as any,
-        { _variant_id: variant_id } as any,
-      );
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Marked as available");
       invalidateAll();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -439,140 +413,7 @@ function StockInRecordsPage() {
         </Card>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
-        <Card className="h-fit p-5">
-          <h2 className="mb-4 flex items-center gap-2 font-semibold">
-            <Plus className="h-4 w-4" />
-            {editing ? "Edit stock-in record" : "Record delivery"}
-          </h2>
-          <div className="space-y-4">
-            <div>
-              <Label>Product / variant</Label>
-              <Popover open={variantOpen} onOpenChange={setVariantOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={variantOpen}
-                    disabled={!!editing}
-                    className="w-full justify-between font-normal"
-                  >
-                    <span className="truncate">
-                      {selectedVariant
-                        ? `${selectedVariant.product?.name} \u00b7 ${selectedVariant.variant_name}`
-                        : "Search product or variant"}
-                    </span>
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                  <Command
-                    filter={(value, search) =>
-                      value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
-                    }
-                  >
-                    <CommandInput placeholder="Type a product, variant or category..." />
-                    <CommandList className="max-h-72 overflow-y-auto overscroll-contain">
-                      <CommandEmpty>No matching product.</CommandEmpty>
-                      <CommandGroup>
-                        {(variants.data ?? []).map((v) => (
-                          <CommandItem
-                            key={v.id}
-                            value={`${v.product?.name ?? ""} ${v.variant_name} ${v.product?.category ?? ""}`}
-                            onSelect={() => {
-                              setForm({ ...form, variantId: v.id });
-                              setVariantOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                form.variantId === v.id ? "opacity-100" : "opacity-0",
-                              )}
-                            />
-                            <span className="truncate">
-                              {v.product?.name} &middot; {v.variant_name}
-                            </span>
-                            <span className="ml-auto pl-2 text-xs text-muted-foreground">
-                              {v.stock?.[0]?.quantity ?? 0} in stock
-                            </span>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div>
-              <Label>Supplier</Label>
-              <Select
-                value={form.supplierId}
-                onValueChange={(value) => setForm({ ...form, supplierId: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select supplier" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No supplier</SelectItem>
-                  {(suppliers.data ?? []).map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Quantity</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={form.quantity}
-                  onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Unit buying price</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.price}
-                  onChange={(e) => setForm({ ...form, price: e.target.value })}
-                />
-              </div>
-            </div>
-            <div>
-              <Label>Date and time received</Label>
-              <Input
-                type="datetime-local"
-                value={form.receivedAt}
-                onChange={(e) => setForm({ ...form, receivedAt: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label>Notes</Label>
-              <Textarea
-                value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                placeholder="Invoice, batch, delivery notes..."
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={() => save.mutate()} disabled={save.isPending || !online}>
-                {save.isPending ? "Saving..." : editing ? "Save changes" : "Record stock-in"}
-              </Button>
-              {editing && (
-                <Button variant="outline" onClick={resetForm}>
-                  Cancel
-                </Button>
-              )}
-            </div>
-          </div>
-        </Card>
-
+      <div>
         <Card className="p-5">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -639,14 +480,6 @@ function StockInRecordsPage() {
                       total
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => editRecord(r)}
-                    aria-label="Edit stock-in record"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
                 </div>
               </div>
             ))}
@@ -715,9 +548,7 @@ function StockInRecordsPage() {
                     onSave={(q, l) => updateStock.mutate({ id: r.id, quantity: q, low: l })}
                     onAdd={() => setAddStockFor(r)}
                     onEditPrice={() => setEditPriceFor(r)}
-                    onMarkAvailable={() => r.variant && markAvailable.mutate(r.variant.id)}
                     pending={updateStock.isPending}
-                    markPending={markAvailable.isPending}
                   />
                 ))
               )}
@@ -860,17 +691,13 @@ function StockEditor({
   onSave,
   onAdd,
   onEditPrice,
-  onMarkAvailable,
   pending,
-  markPending,
 }: {
   row: StockRow;
   onSave: (q: number, l: number) => void;
   onAdd: () => void;
   onEditPrice: () => void;
-  onMarkAvailable: () => void;
   pending: boolean;
-  markPending: boolean;
 }) {
   const [q, setQ] = useState(row.quantity);
   const [l, setL] = useState(row.low_stock_alert_level);
@@ -934,15 +761,6 @@ function StockEditor({
           </Button>
           <Button size="sm" disabled={!dirty || pending} onClick={() => onSave(q, l)}>
             Save
-          </Button>
-          <Button
-            size="sm"
-            variant={flaggedOut ? "default" : "outline"}
-            disabled={markPending}
-            onClick={onMarkAvailable}
-            className={flaggedOut ? "bg-emerald-600 hover:bg-emerald-700" : ""}
-          >
-            Stock Available
           </Button>
         </div>
       </TableCell>
