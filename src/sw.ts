@@ -6,10 +6,10 @@ declare const self: ServiceWorkerGlobalScope & {
   __WB_MANIFEST: Array<{ url: string; revision?: string | null }>;
 };
 
-const VERSION = "tillpoint-cache-v6";
+const VERSION = "tillpoint-cache-v7";
 const PRECACHE = VERSION;
-const RUNTIME = "tillpoint-runtime-v6";
-const PAGES = "tillpoint-pages-v6";
+const RUNTIME = "tillpoint-runtime-v7";
+const PAGES = "tillpoint-pages-v7";
 const OFFLINE_URL = "/offline.html";
 const SYNC_TAG = "tillpoint-sales";
 const SHELL_URL = "/";
@@ -25,6 +25,19 @@ const APP_PAGES = [
   "/sync",
   "/transactions",
   "/manager",
+  "/manager/products",
+  "/manager/stock-in",
+  "/manager/alerts",
+  "/manager/orders",
+  "/manager/refunds",
+  "/manager/profit",
+  "/manager/expenses",
+  "/manager/cashiers",
+  "/manager/suppliers",
+  "/manager/storage",
+  "/manager/settings",
+  "/manager/manuals",
+  "/manager/agreement",
 ];
 
 // Injected at build time: every hashed JS/CSS/asset of the app shell.
@@ -137,11 +150,16 @@ async function navigationHandler(request: Request): Promise<Response> {
     }
     return response;
   } catch {
-    return (
-      (await cachedPage(pathname)) ??
-      (await caches.match(OFFLINE_URL)) ??
-      new Response("Offline", { status: 503 })
-    );
+    const fallback = await cachedPage(pathname);
+    if (fallback) return fallback;
+    const offline = await caches.match(OFFLINE_URL);
+    if (offline) return offline;
+    const shell = await caches.match(SHELL_URL, { ignoreSearch: true });
+    if (shell) return shell;
+    return new Response("TillPoint is ready for offline use after its first online launch.", {
+      status: 200,
+      headers: { "content-type": "text/plain; charset=utf-8" },
+    });
   }
 }
 
