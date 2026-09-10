@@ -9,77 +9,47 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuthenticatedCashierRouteImport } from './routes/_authenticated/cashier'
-import { Route as AuthenticatedManagerRouteImport } from './routes/_authenticated/manager'
-import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
-import { Route as AuthenticatedRefundsRouteImport } from './routes/_authenticated/refunds'
-import { Route as AuthenticatedShiftRouteImport } from './routes/_authenticated/shift'
-import { Route as AuthenticatedSyncRouteImport } from './routes/_authenticated/sync'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTransactionsRouteImport } from './routes/_authenticated/transactions'
+import { Route as AuthenticatedSyncRouteImport } from './routes/_authenticated/sync'
+import { Route as AuthenticatedShiftRouteImport } from './routes/_authenticated/shift'
+import { Route as AuthenticatedRefundsRouteImport } from './routes/_authenticated/refunds'
+import { Route as AuthenticatedOrdersRouteImport } from './routes/_authenticated/orders'
+import { Route as AuthenticatedManagerRouteImport } from './routes/_authenticated/manager'
+import { Route as AuthenticatedCashierRouteImport } from './routes/_authenticated/cashier'
 import { Route as AuthenticatedManagerIndexRouteImport } from './routes/_authenticated/manager.index'
-import { Route as AuthenticatedManagerAgreementRouteImport } from './routes/_authenticated/manager.agreement'
-import { Route as AuthenticatedManagerAlertsRouteImport } from './routes/_authenticated/manager.alerts'
-import { Route as AuthenticatedManagerCashRouteImport } from './routes/_authenticated/manager.cash'
-import { Route as AuthenticatedManagerCashiersRouteImport } from './routes/_authenticated/manager.cashiers'
-import { Route as AuthenticatedManagerExpensesRouteImport } from './routes/_authenticated/manager.expenses'
-import { Route as AuthenticatedManagerLogsRouteImport } from './routes/_authenticated/manager.logs'
-import { Route as AuthenticatedManagerManualsRouteImport } from './routes/_authenticated/manager.manuals'
-import { Route as AuthenticatedManagerProductsRouteImport } from './routes/_authenticated/manager.products'
-import { Route as AuthenticatedManagerProfitRouteImport } from './routes/_authenticated/manager.profit'
-import { Route as AuthenticatedManagerRefundsRouteImport } from './routes/_authenticated/manager.refunds'
-import { Route as AuthenticatedManagerSalesRouteImport } from './routes/_authenticated/manager.sales'
-import { Route as AuthenticatedManagerSettingsRouteImport } from './routes/_authenticated/manager.settings'
-import { Route as AuthenticatedManagerStockRouteImport } from './routes/_authenticated/manager.stock'
-import { Route as AuthenticatedManagerStockInRouteImport } from './routes/_authenticated/manager.stock-in'
-import { Route as AuthenticatedManagerStorageRouteImport } from './routes/_authenticated/manager.storage'
 import { Route as AuthenticatedManagerSuppliersRouteImport } from './routes/_authenticated/manager.suppliers'
+import { Route as AuthenticatedManagerStorageRouteImport } from './routes/_authenticated/manager.storage'
+import { Route as AuthenticatedManagerStockInRouteImport } from './routes/_authenticated/manager.stock-in'
+import { Route as AuthenticatedManagerStockRouteImport } from './routes/_authenticated/manager.stock'
+import { Route as AuthenticatedManagerSettingsRouteImport } from './routes/_authenticated/manager.settings'
+import { Route as AuthenticatedManagerSalesRouteImport } from './routes/_authenticated/manager.sales'
+import { Route as AuthenticatedManagerRefundsRouteImport } from './routes/_authenticated/manager.refunds'
+import { Route as AuthenticatedManagerProfitRouteImport } from './routes/_authenticated/manager.profit'
+import { Route as AuthenticatedManagerProductsRouteImport } from './routes/_authenticated/manager.products'
+import { Route as AuthenticatedManagerManualsRouteImport } from './routes/_authenticated/manager.manuals'
+import { Route as AuthenticatedManagerLogsRouteImport } from './routes/_authenticated/manager.logs'
+import { Route as AuthenticatedManagerExpensesRouteImport } from './routes/_authenticated/manager.expenses'
+import { Route as AuthenticatedManagerCashiersRouteImport } from './routes/_authenticated/manager.cashiers'
+import { Route as AuthenticatedManagerCashRouteImport } from './routes/_authenticated/manager.cash'
+import { Route as AuthenticatedManagerAlertsRouteImport } from './routes/_authenticated/manager.alerts'
+import { Route as AuthenticatedManagerAgreementRouteImport } from './routes/_authenticated/manager.agreement'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedCashierRoute = AuthenticatedCashierRouteImport.update({
-  id: '/cashier',
-  path: '/cashier',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedManagerRoute = AuthenticatedManagerRouteImport.update({
-  id: '/manager',
-  path: '/manager',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedOrdersRoute = AuthenticatedOrdersRouteImport.update({
-  id: '/orders',
-  path: '/orders',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedRefundsRoute = AuthenticatedRefundsRouteImport.update({
-  id: '/refunds',
-  path: '/refunds',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedShiftRoute = AuthenticatedShiftRouteImport.update({
-  id: '/shift',
-  path: '/shift',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
-const AuthenticatedSyncRoute = AuthenticatedSyncRouteImport.update({
-  id: '/sync',
-  path: '/sync',
-  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedTransactionsRoute =
   AuthenticatedTransactionsRouteImport.update({
@@ -87,94 +57,46 @@ const AuthenticatedTransactionsRoute =
     path: '/transactions',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedSyncRoute = AuthenticatedSyncRouteImport.update({
+  id: '/sync',
+  path: '/sync',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedShiftRoute = AuthenticatedShiftRouteImport.update({
+  id: '/shift',
+  path: '/shift',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedRefundsRoute = AuthenticatedRefundsRouteImport.update({
+  id: '/refunds',
+  path: '/refunds',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedOrdersRoute = AuthenticatedOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedManagerRoute = AuthenticatedManagerRouteImport.update({
+  id: '/manager',
+  path: '/manager',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedCashierRoute = AuthenticatedCashierRouteImport.update({
+  id: '/cashier',
+  path: '/cashier',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedManagerIndexRoute =
   AuthenticatedManagerIndexRouteImport.update({
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedManagerRoute,
   } as any)
-const AuthenticatedManagerAgreementRoute =
-  AuthenticatedManagerAgreementRouteImport.update({
-    id: '/agreement',
-    path: '/agreement',
-    getParentRoute: () => AuthenticatedManagerRoute,
-  } as any)
-const AuthenticatedManagerAlertsRoute =
-  AuthenticatedManagerAlertsRouteImport.update({
-    id: '/alerts',
-    path: '/alerts',
-    getParentRoute: () => AuthenticatedManagerRoute,
-  } as any)
-const AuthenticatedManagerCashRoute =
-  AuthenticatedManagerCashRouteImport.update({
-    id: '/cash',
-    path: '/cash',
-    getParentRoute: () => AuthenticatedManagerRoute,
-  } as any)
-const AuthenticatedManagerCashiersRoute =
-  AuthenticatedManagerCashiersRouteImport.update({
-    id: '/cashiers',
-    path: '/cashiers',
-    getParentRoute: () => AuthenticatedManagerRoute,
-  } as any)
-const AuthenticatedManagerExpensesRoute =
-  AuthenticatedManagerExpensesRouteImport.update({
-    id: '/expenses',
-    path: '/expenses',
-    getParentRoute: () => AuthenticatedManagerRoute,
-  } as any)
-const AuthenticatedManagerLogsRoute =
-  AuthenticatedManagerLogsRouteImport.update({
-    id: '/logs',
-    path: '/logs',
-    getParentRoute: () => AuthenticatedManagerRoute,
-  } as any)
-const AuthenticatedManagerManualsRoute =
-  AuthenticatedManagerManualsRouteImport.update({
-    id: '/manuals',
-    path: '/manuals',
-    getParentRoute: () => AuthenticatedManagerRoute,
-  } as any)
-const AuthenticatedManagerProductsRoute =
-  AuthenticatedManagerProductsRouteImport.update({
-    id: '/products',
-    path: '/products',
-    getParentRoute: () => AuthenticatedManagerRoute,
-  } as any)
-const AuthenticatedManagerProfitRoute =
-  AuthenticatedManagerProfitRouteImport.update({
-    id: '/profit',
-    path: '/profit',
-    getParentRoute: () => AuthenticatedManagerRoute,
-  } as any)
-const AuthenticatedManagerRefundsRoute =
-  AuthenticatedManagerRefundsRouteImport.update({
-    id: '/refunds',
-    path: '/refunds',
-    getParentRoute: () => AuthenticatedManagerRoute,
-  } as any)
-const AuthenticatedManagerSalesRoute =
-  AuthenticatedManagerSalesRouteImport.update({
-    id: '/sales',
-    path: '/sales',
-    getParentRoute: () => AuthenticatedManagerRoute,
-  } as any)
-const AuthenticatedManagerSettingsRoute =
-  AuthenticatedManagerSettingsRouteImport.update({
-    id: '/settings',
-    path: '/settings',
-    getParentRoute: () => AuthenticatedManagerRoute,
-  } as any)
-const AuthenticatedManagerStockRoute =
-  AuthenticatedManagerStockRouteImport.update({
-    id: '/stock',
-    path: '/stock',
-    getParentRoute: () => AuthenticatedManagerRoute,
-  } as any)
-const AuthenticatedManagerStockInRoute =
-  AuthenticatedManagerStockInRouteImport.update({
-    id: '/stock-in',
-    path: '/stock-in',
+const AuthenticatedManagerSuppliersRoute =
+  AuthenticatedManagerSuppliersRouteImport.update({
+    id: '/suppliers',
+    path: '/suppliers',
     getParentRoute: () => AuthenticatedManagerRoute,
   } as any)
 const AuthenticatedManagerStorageRoute =
@@ -183,10 +105,88 @@ const AuthenticatedManagerStorageRoute =
     path: '/storage',
     getParentRoute: () => AuthenticatedManagerRoute,
   } as any)
-const AuthenticatedManagerSuppliersRoute =
-  AuthenticatedManagerSuppliersRouteImport.update({
-    id: '/suppliers',
-    path: '/suppliers',
+const AuthenticatedManagerStockInRoute =
+  AuthenticatedManagerStockInRouteImport.update({
+    id: '/stock-in',
+    path: '/stock-in',
+    getParentRoute: () => AuthenticatedManagerRoute,
+  } as any)
+const AuthenticatedManagerStockRoute =
+  AuthenticatedManagerStockRouteImport.update({
+    id: '/stock',
+    path: '/stock',
+    getParentRoute: () => AuthenticatedManagerRoute,
+  } as any)
+const AuthenticatedManagerSettingsRoute =
+  AuthenticatedManagerSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedManagerRoute,
+  } as any)
+const AuthenticatedManagerSalesRoute =
+  AuthenticatedManagerSalesRouteImport.update({
+    id: '/sales',
+    path: '/sales',
+    getParentRoute: () => AuthenticatedManagerRoute,
+  } as any)
+const AuthenticatedManagerRefundsRoute =
+  AuthenticatedManagerRefundsRouteImport.update({
+    id: '/refunds',
+    path: '/refunds',
+    getParentRoute: () => AuthenticatedManagerRoute,
+  } as any)
+const AuthenticatedManagerProfitRoute =
+  AuthenticatedManagerProfitRouteImport.update({
+    id: '/profit',
+    path: '/profit',
+    getParentRoute: () => AuthenticatedManagerRoute,
+  } as any)
+const AuthenticatedManagerProductsRoute =
+  AuthenticatedManagerProductsRouteImport.update({
+    id: '/products',
+    path: '/products',
+    getParentRoute: () => AuthenticatedManagerRoute,
+  } as any)
+const AuthenticatedManagerManualsRoute =
+  AuthenticatedManagerManualsRouteImport.update({
+    id: '/manuals',
+    path: '/manuals',
+    getParentRoute: () => AuthenticatedManagerRoute,
+  } as any)
+const AuthenticatedManagerLogsRoute =
+  AuthenticatedManagerLogsRouteImport.update({
+    id: '/logs',
+    path: '/logs',
+    getParentRoute: () => AuthenticatedManagerRoute,
+  } as any)
+const AuthenticatedManagerExpensesRoute =
+  AuthenticatedManagerExpensesRouteImport.update({
+    id: '/expenses',
+    path: '/expenses',
+    getParentRoute: () => AuthenticatedManagerRoute,
+  } as any)
+const AuthenticatedManagerCashiersRoute =
+  AuthenticatedManagerCashiersRouteImport.update({
+    id: '/cashiers',
+    path: '/cashiers',
+    getParentRoute: () => AuthenticatedManagerRoute,
+  } as any)
+const AuthenticatedManagerCashRoute =
+  AuthenticatedManagerCashRouteImport.update({
+    id: '/cash',
+    path: '/cash',
+    getParentRoute: () => AuthenticatedManagerRoute,
+  } as any)
+const AuthenticatedManagerAlertsRoute =
+  AuthenticatedManagerAlertsRouteImport.update({
+    id: '/alerts',
+    path: '/alerts',
+    getParentRoute: () => AuthenticatedManagerRoute,
+  } as any)
+const AuthenticatedManagerAgreementRoute =
+  AuthenticatedManagerAgreementRouteImport.update({
+    id: '/agreement',
+    path: '/agreement',
     getParentRoute: () => AuthenticatedManagerRoute,
   } as any)
 
@@ -370,11 +370,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -384,46 +384,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/cashier': {
-      id: '/_authenticated/cashier'
-      path: '/cashier'
-      fullPath: '/cashier'
-      preLoaderRoute: typeof AuthenticatedCashierRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/manager': {
-      id: '/_authenticated/manager'
-      path: '/manager'
-      fullPath: '/manager'
-      preLoaderRoute: typeof AuthenticatedManagerRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/orders': {
-      id: '/_authenticated/orders'
-      path: '/orders'
-      fullPath: '/orders'
-      preLoaderRoute: typeof AuthenticatedOrdersRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/refunds': {
-      id: '/_authenticated/refunds'
-      path: '/refunds'
-      fullPath: '/refunds'
-      preLoaderRoute: typeof AuthenticatedRefundsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/shift': {
-      id: '/_authenticated/shift'
-      path: '/shift'
-      fullPath: '/shift'
-      preLoaderRoute: typeof AuthenticatedShiftRouteImport
+    '/_authenticated/transactions': {
+      id: '/_authenticated/transactions'
+      path: '/transactions'
+      fullPath: '/transactions'
+      preLoaderRoute: typeof AuthenticatedTransactionsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/sync': {
@@ -433,11 +405,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSyncRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/transactions': {
-      id: '/_authenticated/transactions'
-      path: '/transactions'
-      fullPath: '/transactions'
-      preLoaderRoute: typeof AuthenticatedTransactionsRouteImport
+    '/_authenticated/shift': {
+      id: '/_authenticated/shift'
+      path: '/shift'
+      fullPath: '/shift'
+      preLoaderRoute: typeof AuthenticatedShiftRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/refunds': {
+      id: '/_authenticated/refunds'
+      path: '/refunds'
+      fullPath: '/refunds'
+      preLoaderRoute: typeof AuthenticatedRefundsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/orders': {
+      id: '/_authenticated/orders'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof AuthenticatedOrdersRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/manager': {
+      id: '/_authenticated/manager'
+      path: '/manager'
+      fullPath: '/manager'
+      preLoaderRoute: typeof AuthenticatedManagerRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/cashier': {
+      id: '/_authenticated/cashier'
+      path: '/cashier'
+      fullPath: '/cashier'
+      preLoaderRoute: typeof AuthenticatedCashierRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/manager/': {
@@ -447,102 +447,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedManagerIndexRouteImport
       parentRoute: typeof AuthenticatedManagerRoute
     }
-    '/_authenticated/manager/agreement': {
-      id: '/_authenticated/manager/agreement'
-      path: '/agreement'
-      fullPath: '/manager/agreement'
-      preLoaderRoute: typeof AuthenticatedManagerAgreementRouteImport
-      parentRoute: typeof AuthenticatedManagerRoute
-    }
-    '/_authenticated/manager/alerts': {
-      id: '/_authenticated/manager/alerts'
-      path: '/alerts'
-      fullPath: '/manager/alerts'
-      preLoaderRoute: typeof AuthenticatedManagerAlertsRouteImport
-      parentRoute: typeof AuthenticatedManagerRoute
-    }
-    '/_authenticated/manager/cash': {
-      id: '/_authenticated/manager/cash'
-      path: '/cash'
-      fullPath: '/manager/cash'
-      preLoaderRoute: typeof AuthenticatedManagerCashRouteImport
-      parentRoute: typeof AuthenticatedManagerRoute
-    }
-    '/_authenticated/manager/cashiers': {
-      id: '/_authenticated/manager/cashiers'
-      path: '/cashiers'
-      fullPath: '/manager/cashiers'
-      preLoaderRoute: typeof AuthenticatedManagerCashiersRouteImport
-      parentRoute: typeof AuthenticatedManagerRoute
-    }
-    '/_authenticated/manager/expenses': {
-      id: '/_authenticated/manager/expenses'
-      path: '/expenses'
-      fullPath: '/manager/expenses'
-      preLoaderRoute: typeof AuthenticatedManagerExpensesRouteImport
-      parentRoute: typeof AuthenticatedManagerRoute
-    }
-    '/_authenticated/manager/logs': {
-      id: '/_authenticated/manager/logs'
-      path: '/logs'
-      fullPath: '/manager/logs'
-      preLoaderRoute: typeof AuthenticatedManagerLogsRouteImport
-      parentRoute: typeof AuthenticatedManagerRoute
-    }
-    '/_authenticated/manager/manuals': {
-      id: '/_authenticated/manager/manuals'
-      path: '/manuals'
-      fullPath: '/manager/manuals'
-      preLoaderRoute: typeof AuthenticatedManagerManualsRouteImport
-      parentRoute: typeof AuthenticatedManagerRoute
-    }
-    '/_authenticated/manager/products': {
-      id: '/_authenticated/manager/products'
-      path: '/products'
-      fullPath: '/manager/products'
-      preLoaderRoute: typeof AuthenticatedManagerProductsRouteImport
-      parentRoute: typeof AuthenticatedManagerRoute
-    }
-    '/_authenticated/manager/profit': {
-      id: '/_authenticated/manager/profit'
-      path: '/profit'
-      fullPath: '/manager/profit'
-      preLoaderRoute: typeof AuthenticatedManagerProfitRouteImport
-      parentRoute: typeof AuthenticatedManagerRoute
-    }
-    '/_authenticated/manager/refunds': {
-      id: '/_authenticated/manager/refunds'
-      path: '/refunds'
-      fullPath: '/manager/refunds'
-      preLoaderRoute: typeof AuthenticatedManagerRefundsRouteImport
-      parentRoute: typeof AuthenticatedManagerRoute
-    }
-    '/_authenticated/manager/sales': {
-      id: '/_authenticated/manager/sales'
-      path: '/sales'
-      fullPath: '/manager/sales'
-      preLoaderRoute: typeof AuthenticatedManagerSalesRouteImport
-      parentRoute: typeof AuthenticatedManagerRoute
-    }
-    '/_authenticated/manager/settings': {
-      id: '/_authenticated/manager/settings'
-      path: '/settings'
-      fullPath: '/manager/settings'
-      preLoaderRoute: typeof AuthenticatedManagerSettingsRouteImport
-      parentRoute: typeof AuthenticatedManagerRoute
-    }
-    '/_authenticated/manager/stock': {
-      id: '/_authenticated/manager/stock'
-      path: '/stock'
-      fullPath: '/manager/stock'
-      preLoaderRoute: typeof AuthenticatedManagerStockRouteImport
-      parentRoute: typeof AuthenticatedManagerRoute
-    }
-    '/_authenticated/manager/stock-in': {
-      id: '/_authenticated/manager/stock-in'
-      path: '/stock-in'
-      fullPath: '/manager/stock-in'
-      preLoaderRoute: typeof AuthenticatedManagerStockInRouteImport
+    '/_authenticated/manager/suppliers': {
+      id: '/_authenticated/manager/suppliers'
+      path: '/suppliers'
+      fullPath: '/manager/suppliers'
+      preLoaderRoute: typeof AuthenticatedManagerSuppliersRouteImport
       parentRoute: typeof AuthenticatedManagerRoute
     }
     '/_authenticated/manager/storage': {
@@ -552,11 +461,102 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedManagerStorageRouteImport
       parentRoute: typeof AuthenticatedManagerRoute
     }
-    '/_authenticated/manager/suppliers': {
-      id: '/_authenticated/manager/suppliers'
-      path: '/suppliers'
-      fullPath: '/manager/suppliers'
-      preLoaderRoute: typeof AuthenticatedManagerSuppliersRouteImport
+    '/_authenticated/manager/stock-in': {
+      id: '/_authenticated/manager/stock-in'
+      path: '/stock-in'
+      fullPath: '/manager/stock-in'
+      preLoaderRoute: typeof AuthenticatedManagerStockInRouteImport
+      parentRoute: typeof AuthenticatedManagerRoute
+    }
+    '/_authenticated/manager/stock': {
+      id: '/_authenticated/manager/stock'
+      path: '/stock'
+      fullPath: '/manager/stock'
+      preLoaderRoute: typeof AuthenticatedManagerStockRouteImport
+      parentRoute: typeof AuthenticatedManagerRoute
+    }
+    '/_authenticated/manager/settings': {
+      id: '/_authenticated/manager/settings'
+      path: '/settings'
+      fullPath: '/manager/settings'
+      preLoaderRoute: typeof AuthenticatedManagerSettingsRouteImport
+      parentRoute: typeof AuthenticatedManagerRoute
+    }
+    '/_authenticated/manager/sales': {
+      id: '/_authenticated/manager/sales'
+      path: '/sales'
+      fullPath: '/manager/sales'
+      preLoaderRoute: typeof AuthenticatedManagerSalesRouteImport
+      parentRoute: typeof AuthenticatedManagerRoute
+    }
+    '/_authenticated/manager/refunds': {
+      id: '/_authenticated/manager/refunds'
+      path: '/refunds'
+      fullPath: '/manager/refunds'
+      preLoaderRoute: typeof AuthenticatedManagerRefundsRouteImport
+      parentRoute: typeof AuthenticatedManagerRoute
+    }
+    '/_authenticated/manager/profit': {
+      id: '/_authenticated/manager/profit'
+      path: '/profit'
+      fullPath: '/manager/profit'
+      preLoaderRoute: typeof AuthenticatedManagerProfitRouteImport
+      parentRoute: typeof AuthenticatedManagerRoute
+    }
+    '/_authenticated/manager/products': {
+      id: '/_authenticated/manager/products'
+      path: '/products'
+      fullPath: '/manager/products'
+      preLoaderRoute: typeof AuthenticatedManagerProductsRouteImport
+      parentRoute: typeof AuthenticatedManagerRoute
+    }
+    '/_authenticated/manager/manuals': {
+      id: '/_authenticated/manager/manuals'
+      path: '/manuals'
+      fullPath: '/manager/manuals'
+      preLoaderRoute: typeof AuthenticatedManagerManualsRouteImport
+      parentRoute: typeof AuthenticatedManagerRoute
+    }
+    '/_authenticated/manager/logs': {
+      id: '/_authenticated/manager/logs'
+      path: '/logs'
+      fullPath: '/manager/logs'
+      preLoaderRoute: typeof AuthenticatedManagerLogsRouteImport
+      parentRoute: typeof AuthenticatedManagerRoute
+    }
+    '/_authenticated/manager/expenses': {
+      id: '/_authenticated/manager/expenses'
+      path: '/expenses'
+      fullPath: '/manager/expenses'
+      preLoaderRoute: typeof AuthenticatedManagerExpensesRouteImport
+      parentRoute: typeof AuthenticatedManagerRoute
+    }
+    '/_authenticated/manager/cashiers': {
+      id: '/_authenticated/manager/cashiers'
+      path: '/cashiers'
+      fullPath: '/manager/cashiers'
+      preLoaderRoute: typeof AuthenticatedManagerCashiersRouteImport
+      parentRoute: typeof AuthenticatedManagerRoute
+    }
+    '/_authenticated/manager/cash': {
+      id: '/_authenticated/manager/cash'
+      path: '/cash'
+      fullPath: '/manager/cash'
+      preLoaderRoute: typeof AuthenticatedManagerCashRouteImport
+      parentRoute: typeof AuthenticatedManagerRoute
+    }
+    '/_authenticated/manager/alerts': {
+      id: '/_authenticated/manager/alerts'
+      path: '/alerts'
+      fullPath: '/manager/alerts'
+      preLoaderRoute: typeof AuthenticatedManagerAlertsRouteImport
+      parentRoute: typeof AuthenticatedManagerRoute
+    }
+    '/_authenticated/manager/agreement': {
+      id: '/_authenticated/manager/agreement'
+      path: '/agreement'
+      fullPath: '/manager/agreement'
+      preLoaderRoute: typeof AuthenticatedManagerAgreementRouteImport
       parentRoute: typeof AuthenticatedManagerRoute
     }
   }
