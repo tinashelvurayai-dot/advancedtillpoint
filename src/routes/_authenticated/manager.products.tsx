@@ -309,7 +309,7 @@ function ProductsPage() {
             .insert({
               product_id: productId,
               variant_name: variantName,
-              size: row.detail ?? null,
+              size: null,
               price: row.price ?? existing?.base_price ?? 0,
             })
             .select("id")
