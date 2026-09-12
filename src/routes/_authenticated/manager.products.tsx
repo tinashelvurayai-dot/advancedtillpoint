@@ -78,6 +78,47 @@ const CATEGORIES = [
   "Other",
 ] as const;
 
+type StockImportRow = { name: string; detail?: string; quantity: number; price?: number };
+
+const STOCK_IMPORT_ROWS: StockImportRow[] = [
+  { name: "Primo", quantity: 6 },
+  { name: "Bela", quantity: 6, price: 4.5 },
+  { name: "Pasta Gogo", quantity: 2 },
+  { name: "Mum's Pasta", quantity: 5 },
+  { name: "Cook More", detail: "5kg", quantity: 7 },
+  { name: "Raha", detail: "5kg", quantity: 5 },
+  { name: "Mr Rice", detail: "5kg", quantity: 12 },
+  { name: "Basmati", detail: "5kg", quantity: 4 },
+  { name: "Montero", quantity: 5, price: 4.5 },
+  { name: "Mr Rice", detail: "2kg", quantity: 21 },
+  { name: "Spaghetti", detail: "50c", quantity: 40, price: 0.5 },
+  { name: "Cook More", detail: "2kg", quantity: 14 },
+  { name: "Zimgold", quantity: 10 },
+  { name: "Olivine", quantity: 17 },
+  { name: "Golden Glow", quantity: 4 },
+  { name: "Sun Soya", quantity: 7 },
+  { name: "Puredrop", quantity: 15 },
+  { name: "D'lite", detail: "750ml", quantity: 24 },
+  { name: "Crosse & Blackwell", quantity: 12 },
+  { name: "Cremora", quantity: 15 },
+  { name: "Ellis Brown", quantity: 24 },
+  { name: "Raha", detail: "2kg", quantity: 34 },
+  { name: "Raha Brown", detail: "2kg", quantity: 18 },
+  { name: "Top Chef", detail: "2kg", quantity: 24 },
+  { name: "Huletts Sugar", detail: "2kg", quantity: 35 },
+  { name: "Goldstar Sugar", detail: "2kg", quantity: 5 },
+  { name: "Mega Self Raising", quantity: 12 },
+  { name: "Gloria", detail: "2kg", quantity: 15 },
+  { name: "Tapitapi", detail: "2kg", quantity: 26 },
+  { name: "Bela Spaghetti", detail: "400g", quantity: 24 },
+  { name: "Charhons", detail: "1kg", quantity: 2 },
+  { name: "Charhons", detail: "500g", quantity: 5 },
+  { name: "Primo", detail: "50g", quantity: 16 },
+  { name: "Munchies", detail: "50g", quantity: 5 },
+  { name: "Munchies", detail: "1kg", quantity: 4 },
+  { name: "Mahatma Rice", detail: "2kg", quantity: 11 },
+];
+
 function ProductImagePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const camRef = useRef<HTMLInputElement>(null);
@@ -217,6 +258,86 @@ function ProductsPage() {
       setImage("");
     },
     onError: (e: Error) => toast.error(e.message),
+  });
+
+  const importStock = useMutation({
+    mutationFn: async () => {
+      const { data: user } = await supabase.auth.getUser();
+      let createdProducts = 0;
+      let createdVariants = 0;
+      let updatedStock = 0;
+
+      for (const row of STOCK_IMPORT_ROWS) {
+        const { data: existing, error: lookupError } = await supabase
+          .from("products")
+          .select("id, base_price")
+          .ilike("name", row.name)
+          .maybeSingle();
+        if (lookupError) throw lookupError;
+
+        let productId = existing?.id;
+        if (!productId) {
+          const { data: created, error } = await supabase
+            .from("products")
+            .insert({
+              name: row.name,
+              description: row.detail ? `${row.name} ${row.detail}` : null,
+              category: "Groceries",
+              base_price: row.price ?? null,
+              created_by: user.user?.id,
+            })
+            .select("id")
+            .single();
+          if (error) throw error;
+          productId = created.id;
+          createdProducts++;
+        }
+
+        const variantName = row.detail ?? "Standard";
+        const { data: variant, error: variantLookupError } = await supabase
+          .from("product_variants")
+          .select("id")
+          .eq("product_id", productId)
+          .ilike("variant_name", variantName)
+          .maybeSingle();
+        if (variantLookupError) throw variantLookupError;
+
+        let variantId = variant?.id;
+        if (!variantId) {
+          const { data: createdVariant, error } = await supabase
+            .from("product_variants")
+            .insert({
+              product_id: productId,
+              variant_name: variantName,
+              size: row.detail ?? null,
+              price: row.price ?? existing?.base_price ?? 0,
+            })
+            .select("id")
+            .single();
+          if (error) throw error;
+          variantId = createdVariant.id;
+          createdVariants++;
+        }
+
+        const { error: stockError } = await supabase
+          .from("stock")
+          .update({ quantity: row.quantity, available: row.quantity > 0 })
+          .eq("variant_id", variantId);
+        if (stockError) throw stockError;
+        updatedStock++;
+      }
+
+      return { createdProducts, createdVariants, updatedStock };
+    },
+    onSuccess: ({ createdProducts, createdVariants, updatedStock }) => {
+      toast.success(
+        `Inventory imported: ${createdProducts} products, ${createdVariants} variants, ${updatedStock} stock levels updated`,
+      );
+      ["products", "stock", "stock-in-variants", "cashier", "alerts"].forEach((key) =>
+        qc.invalidateQueries({ queryKey: [key], refetchType: "all" }),
+      );
+    },
+    onError: (e: Error) => toast.error(`Inventory import failed: ${e.message}`),
   });
 
   const updateProduct = useMutation({
@@ -371,6 +492,15 @@ function ProductsPage() {
               <Switch checked={hideImages} onCheckedChange={setHideImages} />
             </label>
           )}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => importStock.mutate()}
+            disabled={importStock.isPending}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            {importStock.isPending ? "Importing stock..." : "Import stock list"}
+          </Button>
           <Dialog
             open={openNewProduct}
             onOpenChange={(o) => {
