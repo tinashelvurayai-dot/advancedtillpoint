@@ -38,6 +38,7 @@ import {
 import { enqueueSale, flushQueue, getQueue } from "@/lib/offline-queue";
 import {
   appendLog,
+  flushLogPersistence,
   hydrateLogFromIdb,
   subscribeLog,
   type TxLogEntry,
@@ -398,7 +399,7 @@ function CashierScreen() {
 
       // LOCAL FIRST: the sale is committed to this device before anything else.
       // The till never waits for the cloud, so a sale can never hang on the network.
-      const entry = enqueueSale({
+      const entry = await enqueueSale({
         id: saleId,
         cashier_id: session?.user.id ?? offlineCashierId,
         cashier_name: cashierName,
@@ -415,6 +416,7 @@ function CashierScreen() {
         items: logItems,
         status: "queued",
       });
+      await flushLogPersistence();
       // Reduce on-hand counts locally right away so offline stock stays accurate.
       recordSaleDelta(entry.id, items);
       setQueuedCount(getQueue().length);

@@ -102,6 +102,11 @@ export function markLogStatus(id: string, status: TxLogEntry["status"]) {
   persist(logCache.map((e) => (e.id === id ? { ...e, status } : e)));
 }
 
+/** Wait for the current transaction history to be durably written. */
+export async function flushLogPersistence(): Promise<void> {
+  await idbSet(IDB_LOG_KEY, logCache);
+}
+
 export function clearLog() {
   persist([]);
 }
