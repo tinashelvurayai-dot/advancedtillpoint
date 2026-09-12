@@ -121,9 +121,9 @@ export async function hydrateQueueFromIdb(): Promise<number> {
   return merged.length;
 }
 
-export function enqueueSale(
+export async function enqueueSale(
   sale: Omit<QueuedSale, "id" | "queued_at"> & { id?: string },
-): QueuedSale {
+): Promise<QueuedSale> {
   const entry: QueuedSale = {
     ...sale,
     // Unique id + timestamp: the server dedupes on this id.
@@ -135,17 +135,19 @@ export function enqueueSale(
     status: "pending",
     attempts: 0,
   };
-  void persist([...queueCache, entry]).then((ok) => {
-    if (ok) {
-      if (typeof navigator !== "undefined" && !navigator.onLine)
-        toast.success("Sale saved offline - will sync when back online");
-    } else {
+  const saved = persist([...queueCache, entry]);
+  return saved.then((ok) => {
+    if (!ok) {
       toast.error("ERROR: Sale could not be saved. Please write it down manually.", {
         duration: 60_000,
       });
+      throw new Error("Unable to save sale on this device");
     }
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      toast.success("Sale saved offline - will sync when back online");
+    }
+    return entry;
   });
-  return entry;
 }
 
 /** Connection failures are never the cashier's fault - keep retrying those. */
