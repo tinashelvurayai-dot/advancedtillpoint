@@ -48,6 +48,7 @@ import { SyncAlertBanner } from "@/components/sync-alert-banner";
 import { printReceipt, downloadReceipt, receiptText, receiptNumber } from "@/lib/receipt";
 import { runSync } from "@/lib/sync-manager";
 import { recordSaleDelta, hydrateStockDeltas } from "@/lib/local-stock";
+import { toSourceStockDeltas } from "@/lib/sale-units";
 import { CASHIER_NAME, setMode, isManagerMode } from "@/lib/session-mode";
 
 import { IDB_KEYS, idbGet, idbSet } from "@/lib/offline-db";
@@ -418,7 +419,7 @@ function CashierScreen() {
       });
       await flushLogPersistence();
       // Reduce on-hand counts locally right away so offline stock stays accurate.
-      recordSaleDelta(entry.id, items);
+      recordSaleDelta(entry.id, toSourceStockDeltas(items, list));
       setQueuedCount(getQueue().length);
 
       return Promise.resolve({ entry: logEntry });

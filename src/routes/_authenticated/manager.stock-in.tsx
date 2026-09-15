@@ -37,6 +37,7 @@ import {
   Plus,
   Search,
   TrendingDown,
+  Trash2,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { toast } from "sonner";
@@ -265,6 +266,19 @@ function StockInRecordsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const clearDeliveryRegister = useMutation({
+    mutationFn: async () => {
+      if (!online) throw new Error("Reconnect before clearing the delivery register.");
+      const { error } = await supabase.from("stock_in_records").delete().not("id", "is", null);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Delivery register cleared. Current stock was kept.");
+      invalidateAll();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const updatePrice = useMutation({
     mutationFn: async ({ variant_id, price }: { variant_id: string; price: number }) => {
       const { error } = await supabase
@@ -422,7 +436,22 @@ function StockInRecordsPage() {
                 {filtered.length} records · {formatCurrency(total)} total buying cost
               </p>
             </div>
-            <Badge variant="outline">Live</Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline">Live</Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!online || clearDeliveryRegister.isPending || filtered.length === 0}
+                onClick={() => {
+                  if (confirm("Clear every delivery record? Current stock and products will not be changed.")) {
+                    clearDeliveryRegister.mutate();
+                  }
+                }}
+              >
+                <Trash2 data-icon="inline-start" />
+                {clearDeliveryRegister.isPending ? "Clearing..." : "Clear register"}
+              </Button>
+            </div>
           </div>
           <div className="mb-5 grid gap-2 md:grid-cols-[1fr_auto_auto_auto]">
             <div className="relative">
